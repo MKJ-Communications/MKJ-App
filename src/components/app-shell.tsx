@@ -144,7 +144,7 @@ function NotificationsBell() {
 }
 
 function UserMenu() {
-  const { email } = useSession();
+  const { email, hasPassword } = useSession();
   const { data: profile } = useProfile();
   const { data: roles = [] } = useRoles();
   const qc = useQueryClient();
@@ -186,9 +186,11 @@ function UserMenu() {
           <DropdownMenuItem onClick={() => navigate({ to: "/account-settings" })}>
             <Settings className="mr-2 h-4 w-4" /> Account settings
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setResetOpen(true)} disabled={!email}>
-            <KeyRound className="mr-2 h-4 w-4" /> Reset password
-          </DropdownMenuItem>
+          {hasPassword ? (
+            <DropdownMenuItem onClick={() => setResetOpen(true)} disabled={!email}>
+              <KeyRound className="mr-2 h-4 w-4" /> Reset password
+            </DropdownMenuItem>
+          ) : null}
           <DropdownMenuItem onClick={signOut}>
             <LogOut className="mr-2 h-4 w-4" /> Sign out
           </DropdownMenuItem>

@@ -16,7 +16,16 @@ export function useSession() {
     return () => data.subscription.unsubscribe();
   }, []);
 
-  return { session, ready, userId: session?.user.id ?? null, email: session?.user.email ?? null };
+  return {
+    session,
+    ready,
+    userId: session?.user.id ?? null,
+    email: session?.user.email ?? null,
+    // False for accounts that only ever signed in with Microsoft: they have no
+    // password to change or reset. An email account later linked to Microsoft
+    // keeps its password, so it lists both providers.
+    hasPassword: session?.user.app_metadata.providers?.includes("email") ?? false,
+  };
 }
 
 export function useProfile() {

@@ -24,7 +24,7 @@ export const Route = createFileRoute("/_authenticated/account-settings")({
 });
 
 function AccountSettingsPage() {
-  const { email } = useSession();
+  const { email, ready, hasPassword } = useSession();
   const navigate = useNavigate();
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
@@ -79,66 +79,78 @@ function AccountSettingsPage() {
         }
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Change password</CardTitle>
-          <CardDescription>Enter your current password, then choose a new one.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form
-            className="space-y-5"
-            onSubmit={(e) => {
-              e.preventDefault();
-              setTouched({ current: true, next: true, confirm: true });
-              if (valid) changeMut.mutate();
-            }}
-          >
-            <div className="space-y-2">
-              <Label htmlFor="current-password">Current password</Label>
-              <Input
-                id="current-password"
-                type="password"
-                autoComplete="current-password"
-                value={current}
-                onChange={(e) => setCurrent(e.target.value)}
-                onBlur={() => setTouched((t) => ({ ...t, current: true }))}
-              />
-              {show("current") ? <p className="text-xs text-destructive">{show("current")}</p> : null}
-            </div>
+      {!ready ? null : !hasPassword ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Password</CardTitle>
+            <CardDescription>
+              You sign in with your Microsoft account, so there is no MKJ Ops password to change. Manage your password
+              through Microsoft 365.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Change password</CardTitle>
+            <CardDescription>Enter your current password, then choose a new one.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form
+              className="space-y-5"
+              onSubmit={(e) => {
+                e.preventDefault();
+                setTouched({ current: true, next: true, confirm: true });
+                if (valid) changeMut.mutate();
+              }}
+            >
+              <div className="space-y-2">
+                <Label htmlFor="current-password">Current password</Label>
+                <Input
+                  id="current-password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={current}
+                  onChange={(e) => setCurrent(e.target.value)}
+                  onBlur={() => setTouched((t) => ({ ...t, current: true }))}
+                />
+                {show("current") ? <p className="text-xs text-destructive">{show("current")}</p> : null}
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="new-password">New password</Label>
-              <Input
-                id="new-password"
-                type="password"
-                autoComplete="new-password"
-                value={next}
-                onChange={(e) => setNext(e.target.value)}
-                onBlur={() => setTouched((t) => ({ ...t, next: true }))}
-              />
-              <PasswordRequirements value={next} />
-              {show("next") ? <p className="text-xs text-destructive">{show("next")}</p> : null}
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-password">New password</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  autoComplete="new-password"
+                  value={next}
+                  onChange={(e) => setNext(e.target.value)}
+                  onBlur={() => setTouched((t) => ({ ...t, next: true }))}
+                />
+                <PasswordRequirements value={next} />
+                {show("next") ? <p className="text-xs text-destructive">{show("next")}</p> : null}
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirm new password</Label>
-              <Input
-                id="confirm-password"
-                type="password"
-                autoComplete="new-password"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                onBlur={() => setTouched((t) => ({ ...t, confirm: true }))}
-              />
-              {show("confirm") ? <p className="text-xs text-destructive">{show("confirm")}</p> : null}
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Confirm new password</Label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  autoComplete="new-password"
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  onBlur={() => setTouched((t) => ({ ...t, confirm: true }))}
+                />
+                {show("confirm") ? <p className="text-xs text-destructive">{show("confirm")}</p> : null}
+              </div>
 
-            <Button type="submit" disabled={!valid || changeMut.isPending}>
-              {changeMut.isPending ? "Updating…" : "Update Password"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              <Button type="submit" disabled={!valid || changeMut.isPending}>
+                {changeMut.isPending ? "Updating…" : "Update Password"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

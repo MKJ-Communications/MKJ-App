@@ -3,7 +3,7 @@
   "configurations": [
     {
       "name": "dev",
-      "runtimeExecutable": "bun",
+      "runtimeExecutable": "C:/Users/cesar/.bun/bin/bun.exe",
       "runtimeArgs": ["run", "dev"],
       "port": 8080,
       "autoPort": true

@@ -45,10 +45,40 @@ function AuthPage() {
   const submitting = useRef(false);
 
   useEffect(() => {
+    // A failed Microsoft sign-in comes back to this page with the reason in the
+    // URL (query string or hash, depending on the auth flow). Show it once, then
+    // drop it from the address bar so a reload doesn't repeat it.
+    const params = new URLSearchParams(window.location.search);
+    new URLSearchParams(window.location.hash.slice(1)).forEach((v, k) => params.set(k, v));
+    const oauthError = params.get("error_description") ?? params.get("error");
+    if (oauthError) {
+      toast.error(`Microsoft sign-in failed: ${oauthError}`);
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) navigate({ to: "/dashboard", replace: true });
     });
   }, [navigate]);
+
+  // Redirects to Microsoft; Supabase brings the user back to /auth with a
+  // session, and the effect above forwards them to the dashboard. An account
+  // whose email already exists here (e.g. created with a password) is linked
+  // to the Microsoft identity by Supabase, keeping its roles and projects.
+  async function signInWithMicrosoft() {
+    if (submitting.current) return;
+    submitting.current = true;
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "azure",
+      options: { scopes: "email", redirectTo: `${window.location.origin}/auth` },
+    });
+    if (error) {
+      submitting.current = false;
+      setLoading(false);
+      toast.error(error.message);
+    }
+  }
 
   async function signIn(e: React.FormEvent) {
     e.preventDefault();
@@ -129,6 +159,15 @@ function AuthPage() {
             <CardDescription>Access the operations dashboard.</CardDescription>
           </CardHeader>
           <CardContent>
+            <Button type="button" variant="outline" className="w-full gap-2" onClick={signInWithMicrosoft} disabled={loading}>
+              <MicrosoftLogo />
+              Sign in with Microsoft
+            </Button>
+            <div className="my-4 flex items-center gap-3 text-xs text-muted-foreground">
+              <div className="h-px flex-1 bg-border" />
+              or use email
+              <div className="h-px flex-1 bg-border" />
+            </div>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Sign in</TabsTrigger>
@@ -183,5 +222,16 @@ function AuthPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+function MicrosoftLogo() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 21 21" className="h-4 w-4">
+      <rect x="1" y="1" width="9" height="9" fill="#f25022" />
+      <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
+      <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
+      <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
+    </svg>
   );
 }
