@@ -1,0 +1,11 @@
+-- F-13 / L-07: the frontend has listed 'closed' in SHIPPING_TICKET_STATUSES
+-- since the proof-of-delivery work landed, and canEditTicket()/canDeleteTicket()
+-- already treat it as a locked-down terminal state (only admins may edit or
+-- delete a closed ticket) -- but no migration ever added the value to the
+-- enum itself, so selecting "Closed" in the edit dialog would fail with a
+-- Postgres error. This was the one remaining gap in that feature; audited
+-- clean otherwise as of 2026-09-09 (see audit_schema_drift.sql).
+--
+-- ALTER TYPE ... ADD VALUE cannot run in the same transaction as a write that
+-- uses the new value, so this migration does only the ALTER and nothing else.
+ALTER TYPE public.ticket_status ADD VALUE 'closed';

@@ -14,9 +14,8 @@ import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 import { openPurchaseOrderPdf } from "@/lib/po-pdf";
 import { assigneeLabel, useAssignableUsers } from "@/components/assignee-select";
-import { PoProcoreCheckbox, needsProcoreEntry } from "@/components/po-procore-checkbox";
-import { Label } from "@/components/ui/label";
-import { AlertTriangle } from "lucide-react";
+import { useRoles } from "@/hooks/use-session";
+import { isWarehouseOrAdmin } from "@/lib/roles";
 
 type POStatus = Database["public"]["Enums"]["po_status"];
 
@@ -47,7 +46,9 @@ function POView() {
     queryFn: async () => (await supabase.from("packing_slips").select("id, slip_number, received_date").eq("po_id", id).order("received_date", { ascending: false })).data ?? [],
   });
   const { data: assignableUsers = [] } = useAssignableUsers();
-
+  // POs belong to warehouse managers and admins; project managers only view
+  // them (and receive shipments), so the status control is theirs alone.
+  const canManagePO = isWarehouseOrAdmin(useRoles().data ?? []);
 
   const statusMut = useMutation({
     mutationFn: async (status: POStatus) => {
@@ -75,7 +76,6 @@ function POView() {
   // once a packing slip records a receipt — not manually selectable here.
   const currentStatus = po.data.status;
   const hasReceipts = currentStatus === "partially_received" || currentStatus === "received";
-  const procoreNeeded = needsProcoreEntry(currentStatus, !!po.data.entered_in_procore);
   const statusOptions = hasReceipts
     ? PO_STATUS_OPTIONS.filter((o) => o.value === currentStatus)
     : PO_STATUS_OPTIONS.filter((o) => o.value !== "partially_received" && o.value !== "received");
@@ -91,17 +91,19 @@ function POView() {
         actions={
           <div className="flex items-center gap-2">
             <POStatusBadge status={po.data.status} />
-            <div>
-              <Select value={po.data.status} onValueChange={(v) => statusMut.mutate(v as POStatus)} disabled={hasReceipts}>
-                <SelectTrigger className="h-8 w-44"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {statusOptions.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              {hasReceipts ? (
-                <p className="mt-1 text-xs text-muted-foreground">Set automatically from packing slips — edit or delete the slip to correct.</p>
-              ) : null}
-            </div>
+            {canManagePO ? (
+              <div>
+                <Select value={po.data.status} onValueChange={(v) => statusMut.mutate(v as POStatus)} disabled={hasReceipts}>
+                  <SelectTrigger className="h-8 w-44"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                {hasReceipts ? (
+                  <p className="mt-1 text-xs text-muted-foreground">Set automatically from packing slips — edit or delete the slip to correct.</p>
+                ) : null}
+              </div>
+            ) : null}
             <Button size="sm" variant="outline" onClick={() => pdfMut.mutate()} disabled={pdfMut.isPending}>
               <FileText className="mr-1 h-4 w-4" />{pdfMut.isPending ? "Opening…" : "View PO"}
             </Button>
@@ -118,18 +120,6 @@ function POView() {
         }
       />
 
-
-      {procoreNeeded ? (
-        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-md bg-status-partial px-4 py-3 text-sm text-status-partial-foreground">
-          <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
-          <span>This PO is executed but has not been entered in Procore yet.</span>
-          <span className="ml-auto flex items-center gap-2">
-            <PoProcoreCheckbox id="po-procore" poId={id} entered={!!po.data.entered_in_procore} />
-            <Label htmlFor="po-procore" className="cursor-pointer">Entered in Procore</Label>
-          </span>
-        </div>
-      ) : null}
-
       <div className="grid gap-4 md:grid-cols-2">
         <Card><CardContent className="p-4 text-sm">
           <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Supplier</div>
@@ -144,12 +134,6 @@ function POView() {
           <div>Expected delivery: {po.data.delivery_date ?? "—"}</div>
           <div>Last received: {slips.data?.[0]?.received_date ?? "—"}</div>
           <div>Payment terms: {po.data.payment_terms ?? "—"}</div>
-          {procoreNeeded ? null : (
-            <div className="mt-3 flex items-center gap-2">
-              <PoProcoreCheckbox id="po-procore" poId={id} entered={!!po.data.entered_in_procore} />
-              <Label htmlFor="po-procore" className="cursor-pointer font-normal">Entered in Procore</Label>
-            </div>
-          )}
         </CardContent></Card>
 
       </div>

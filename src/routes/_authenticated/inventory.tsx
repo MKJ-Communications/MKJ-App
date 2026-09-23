@@ -23,6 +23,7 @@ type InvRow = {
   project_id: string;
   product_id: string;
   on_hand: number;
+  held: number;
   projects: { mkj_number: string; name: string } | null;
   products: { part_number: string; description: string; reorder_point: number } | null;
 };
@@ -40,7 +41,7 @@ function InventoryPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("v_project_inventory")
-        .select("project_id, product_id, on_hand, products:product_id(part_number, description, reorder_point)");
+        .select("project_id, product_id, on_hand, held, products:product_id(part_number, description, reorder_point)");
       if (error) throw error;
       const rows = (data ?? []) as unknown as Omit<InvRow, "projects">[];
 
@@ -110,7 +111,7 @@ function InventoryPage() {
 
   return (
     <div className="mx-auto max-w-7xl">
-      <PageHeader title="Inventory" description="On-hand quantities across every project." />
+      <PageHeader title="Inventory" description="On-hand quantities across every project. Held stock is reserved for manufacturing build requests." />
 
       <div className="relative mb-4">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -164,7 +165,7 @@ function InventoryPage() {
         <Table>
           <TableHeader><TableRow>
             <TableHead>Project</TableHead><TableHead>Part #</TableHead><TableHead>Description</TableHead>
-            <TableHead className="text-right">On Hand</TableHead><TableHead className="text-right">Reorder</TableHead>
+            <TableHead className="text-right">On Hand</TableHead><TableHead className="text-right" title="Reserved for manufacturing build requests">Held</TableHead><TableHead className="text-right">Reorder</TableHead>
           </TableRow></TableHeader>
           <TableBody>
             {filtered.length > 0 ? filtered.map((r) => {
@@ -202,11 +203,12 @@ function InventoryPage() {
                   {Number(r.on_hand)}
                   {r.products && Number(r.on_hand) <= (r.products.reorder_point ?? 0) ? <Badge variant="destructive" className="ml-2">Low</Badge> : null}
                 </TableCell>
+                <TableCell className="text-right text-muted-foreground">{Number(r.held) > 0 ? Number(r.held) : "—"}</TableCell>
                 <TableCell className="text-right text-muted-foreground">{r.products?.reorder_point ?? 0}</TableCell>
               </TableRow>
               {serialsOn && isOpen ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="bg-muted/30">
+                  <TableCell colSpan={6} className="bg-muted/30">
                     <div className="flex flex-wrap gap-1">
                       {serials.map((s) => (
                         <span key={s} className="rounded-full bg-background px-2 py-0.5 font-mono text-[10px]">{s}</span>
@@ -217,7 +219,7 @@ function InventoryPage() {
               ) : null}
               </Fragment>
               );
-            }) : <TableRow><TableCell colSpan={5} className="py-6 text-center text-sm text-muted-foreground">{term ? "No matches." : "No stock yet. Record a packing slip to receive goods."}</TableCell></TableRow>}
+            }) : <TableRow><TableCell colSpan={6} className="py-6 text-center text-sm text-muted-foreground">{term ? "No matches." : "No stock yet. Record a packing slip to receive goods."}</TableCell></TableRow>}
           </TableBody>
         </Table>
       </CardContent></Card>

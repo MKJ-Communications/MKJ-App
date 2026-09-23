@@ -10,8 +10,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/page-header";
+import { SupplierPriceListDialog } from "@/components/supplier-price-list-dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Search } from "lucide-react";
+import { Plus, Pencil, Search, DollarSign } from "lucide-react";
 import { useRoles } from "@/hooks/use-session";
 import { canWrite as canWriteRoles } from "@/lib/roles";
 
@@ -40,6 +41,10 @@ function SuppliersPage() {
   const [q, setQ] = useState("");
   const [form, setForm] = useState<SupplierForm>(emptyForm);
   const [editId, setEditId] = useState<string | null>(null);
+  // Same predicate as supplier_prices' SELECT policy (can_write). Reused
+  // as-is since it already matches this page's own write gate.
+  const canSeeCost = canWrite;
+  const [pricesFor, setPricesFor] = useState<{ id: string; name: string } | null>(null);
   const [editForm, setEditForm] = useState<SupplierForm>(emptyForm);
 
   const suppliers = useQuery({
@@ -153,7 +158,7 @@ function SuppliersPage() {
         <Table>
           <TableHeader><TableRow>
             <TableHead>Name</TableHead><TableHead>Contact</TableHead><TableHead>Phone</TableHead><TableHead>Email</TableHead>
-            {canWrite ? <TableHead className="w-16 text-right">Edit</TableHead> : null}
+            {canSeeCost || canWrite ? <TableHead className="w-24 text-right">Actions</TableHead> : null}
           </TableRow></TableHeader>
           <TableBody>
             {filtered.length > 0 ? filtered.map((s) => (
@@ -162,29 +167,43 @@ function SuppliersPage() {
                 <TableCell>{s.contact_name ?? "—"}</TableCell>
                 <TableCell>{s.phone ?? "—"}</TableCell>
                 <TableCell>{s.email ?? "—"}</TableCell>
-                {canWrite ? (
+                {canSeeCost || canWrite ? (
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={`Edit ${s.name}`}
-                      onClick={() => {
-                        setEditId(s.id);
-                        setEditForm({
-                          name: s.name ?? "",
-                          address: s.address ?? "",
-                          phone: s.phone ?? "",
-                          contact_name: s.contact_name ?? "",
-                          email: s.email ?? "",
-                        });
-                      }}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
+                    <div className="flex justify-end gap-1">
+                      {canSeeCost ? (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Prices for ${s.name}`}
+                          onClick={() => setPricesFor({ id: s.id, name: s.name })}
+                        >
+                          <DollarSign className="h-4 w-4" />
+                        </Button>
+                      ) : null}
+                      {canWrite ? (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Edit ${s.name}`}
+                          onClick={() => {
+                            setEditId(s.id);
+                            setEditForm({
+                              name: s.name ?? "",
+                              address: s.address ?? "",
+                              phone: s.phone ?? "",
+                              contact_name: s.contact_name ?? "",
+                              email: s.email ?? "",
+                            });
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      ) : null}
+                    </div>
                   </TableCell>
                 ) : null}
               </TableRow>
-            )) : <TableRow><TableCell colSpan={canWrite ? 5 : 4} className="py-6 text-center text-sm text-muted-foreground">{term ? "No matches." : "No suppliers yet."}</TableCell></TableRow>}
+            )) : <TableRow><TableCell colSpan={canSeeCost || canWrite ? 5 : 4} className="py-6 text-center text-sm text-muted-foreground">{term ? "No matches." : "No suppliers yet."}</TableCell></TableRow>}
           </TableBody>
         </Table>
       </CardContent></Card>
@@ -223,6 +242,15 @@ function SuppliersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {pricesFor ? (
+        <SupplierPriceListDialog
+          open={!!pricesFor}
+          onOpenChange={(o) => !o && setPricesFor(null)}
+          supplierId={pricesFor.id}
+          supplierName={pricesFor.name}
+        />
+      ) : null}
     </div>
   );
 }

@@ -1,0 +1,5 @@
+part_number,supplier_name,source_label,supplier_sku,unit_cost,unit,is_preferred,notes
+WV-S35302-F2L,Anixter,,ANX-WV35302,214.50,ea,TRUE,
+WV-S35302-F2L,Graybar,,GB-88213,229.00,ea,FALSE,slower lead time
+CBL-CAT6-1000,,Amazon,B07XYZ1234,168.99,box,TRUE,prime eligible
+CBL-CAT6-1000,Graybar,,GB-CAT6-1K,175.00,box,FALSE,

@@ -10,7 +10,6 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -39,9 +38,6 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
-  useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -75,13 +71,10 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 // OG/Twitter image tags need absolute URLs — crawlers do not resolve relative
-// paths reliably. Set VITE_SITE_URL to the production domain; preview deploys and
-// local dev fall back to whatever origin the page is actually served from.
-const SITE_URL = (
-  import.meta.env.VITE_SITE_URL ||
-  (typeof process !== "undefined" ? process.env.SITE_URL : "") ||
-  (typeof window !== "undefined" ? window.location.origin : "")
-).replace(/\/+$/, "");
+// paths reliably. VITE_SITE_URL is inlined at build time into both the server and
+// the browser bundle (vite.config.ts falls back to Vercel's production domain), so
+// both render the same tag and hydration matches. Unset (local dev), it stays relative.
+const SITE_URL = (import.meta.env.VITE_SITE_URL ?? "").replace(/\/+$/, "");
 
 const OG_IMAGE = `${SITE_URL}/og-image.png`;
 

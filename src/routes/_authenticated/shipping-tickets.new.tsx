@@ -42,11 +42,12 @@ function NewTicket() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("v_project_inventory")
-        .select("product_id, on_hand")
+        .select("product_id, available")
         .eq("project_id", projectId);
       if (error) throw error;
+      // Available = on hand minus what manufacturing build requests hold.
       const map = new Map<string, number>();
-      for (const r of data ?? []) map.set(r.product_id as string, Number(r.on_hand));
+      for (const r of data ?? []) map.set(r.product_id as string, Number(r.available));
       return map;
     },
   });
@@ -163,7 +164,7 @@ function NewTicket() {
           </div>
           <Table>
             <TableHeader><TableRow>
-              <TableHead>Product</TableHead><TableHead className="text-right">In stock</TableHead><TableHead>Description</TableHead><TableHead className="text-right">Shipped</TableHead><TableHead className="text-right">Backordered</TableHead>{serialsOn ? <TableHead>Serials</TableHead> : null}<TableHead className="w-10" />
+              <TableHead>Product</TableHead><TableHead className="text-right">Available</TableHead><TableHead>Description</TableHead><TableHead className="text-right">Shipped</TableHead><TableHead className="text-right">Backordered</TableHead>{serialsOn ? <TableHead>Serials</TableHead> : null}<TableHead className="w-10" />
             </TableRow></TableHeader>
             <TableBody>
               {lines.map((l, i) => (
@@ -176,11 +177,11 @@ function NewTicket() {
                   </TableCell>
                   <TableCell className="text-right">
                     {l.product_id ? (() => {
-                      const onHand = stock.data?.get(l.product_id) ?? 0;
-                      const remaining = onHand - l.qty_shipped;
+                      const available = stock.data?.get(l.product_id) ?? 0;
+                      const remaining = available - l.qty_shipped;
                       return (
                         <div className="inline-flex flex-col items-end rounded-md border px-2 py-1">
-                          <span className={`text-sm font-semibold ${remaining < 0 ? "text-destructive" : ""}`}>{onHand}</span>
+                          <span className={`text-sm font-semibold ${remaining < 0 ? "text-destructive" : ""}`}>{available}</span>
                           <span className="text-[10px] text-muted-foreground">{remaining < 0 ? `short ${Math.abs(remaining)}` : `${remaining} left`}</span>
                         </div>
                       );

@@ -7,16 +7,16 @@ import { useRoles } from "@/hooks/use-session";
 import { ROLE_LABELS, highestRole } from "@/lib/roles";
 import { daysAgoInBusinessTimezone } from "@/lib/date";
 import { Badge } from "@/components/ui/badge";
-import { FolderKanban, ClipboardList, Truck, Package, ArrowLeftRight, AlertTriangle } from "lucide-react";
+import { FolderKanban, ClipboardList, Truck, Package, ArrowLeftRight, Inbox, Factory } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — MKJ Ops" }] }),
   component: Dashboard,
 });
 
-function StatCard({ label, value, to, icon: Icon }: { label: string; value: number | string; to: string; icon: React.ComponentType<{ className?: string }> }) {
+function StatCard({ label, value, to, search, icon: Icon }: { label: string; value: number | string; to: string; search?: Record<string, string>; icon: React.ComponentType<{ className?: string }> }) {
   return (
-    <Link to={to} className="block h-full">
+    <Link to={to} search={search} className="block h-full">
       <Card className="h-full transition-shadow hover:shadow-md">
         <CardContent className="flex h-full items-center gap-4 p-4">
           <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
@@ -39,21 +39,32 @@ function Dashboard() {
   const stats = useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: async () => {
-      const [projects, pos, tickets, slips, borrow, procore] = await Promise.all([
+      const [projects, pos, tickets, slips, borrow, poRequests, builds] = await Promise.all([
         supabase.from("projects").select("*", { count: "exact", head: true }).eq("status", "active"),
         supabase.from("purchase_orders").select("*", { count: "exact", head: true }).in("status", ["draft", "approved", "executed", "partially_received"]),
         supabase.from("shipping_tickets").select("*", { count: "exact", head: true }).in("status", ["draft", "ready"]),
         supabase.from("packing_slips").select("*", { count: "exact", head: true }).gte("received_date", daysAgoInBusinessTimezone(7)),
         supabase.from("borrow_requests").select("*", { count: "exact", head: true }).eq("status", "pending"),
-        supabase.from("purchase_orders").select("*", { count: "exact", head: true }).in("status", ["executed", "partially_received", "received"]).eq("entered_in_procore", false),
+        // RLS scopes this: warehouse managers/admins count every project, managers their own.
+        supabase.from("po_requests").select("*", { count: "exact", head: true }).eq("status", "pending"),
+        // Open builds: submitted, in progress or waiting on parts (RLS scopes it to visible projects).
+        supabase.from("build_requests").select("*", { count: "exact", head: true }).in("status", ["submitted", "in_progress", "partially_built"]),
       ]);
+      // A count query can fail (e.g. a transient 401 mid token-refresh) while
+      // the others in the batch succeed. Surfacing it here — instead of
+      // falling back to 0 — keeps a real failure from being cached by React
+      // Query as a legitimate "zero open tickets" answer.
+      for (const r of [projects, pos, tickets, slips, borrow, poRequests, builds]) {
+        if (r.error) throw r.error;
+      }
       return {
         activeProjects: projects.count ?? 0,
         openPOs: pos.count ?? 0,
         openTickets: tickets.count ?? 0,
         slipsWeek: slips.count ?? 0,
         pendingBorrow: borrow.count ?? 0,
-        notInProcore: procore.count ?? 0,
+        pendingPoRequests: poRequests.count ?? 0,
+        openBuilds: builds.count ?? 0,
       };
     },
   });
@@ -61,11 +72,12 @@ function Dashboard() {
   const recent = useQuery({
     queryKey: ["dashboard-recent-projects"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("projects")
         .select("id, mkj_number, name, status, updated_at")
         .order("updated_at", { ascending: false })
         .limit(6);
+      if (error) throw error;
       return data ?? [];
     },
   });
@@ -78,13 +90,14 @@ function Dashboard() {
         actions={top ? <Badge variant="secondary">{ROLE_LABELS[top]}</Badge> : null}
       />
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-7">
         <StatCard label="Active Projects" value={stats.data?.activeProjects ?? "—"} to="/projects" icon={FolderKanban} />
         <StatCard label="Open POs" value={stats.data?.openPOs ?? "—"} to="/purchase-orders" icon={ClipboardList} />
-        <StatCard label="Not in Procore" value={stats.data?.notInProcore ?? "—"} to="/purchase-orders" icon={AlertTriangle} />
+        <StatCard label="Pending PO Requests" value={stats.data?.pendingPoRequests ?? "—"} to="/purchase-orders" search={{ tab: "pending" }} icon={Inbox} />
         <StatCard label="Packing Slips (7d)" value={stats.data?.slipsWeek ?? "—"} to="/packing-slips" icon={Package} />
         <StatCard label="Tickets to Ship" value={stats.data?.openTickets ?? "—"} to="/shipping-tickets" icon={Truck} />
         <StatCard label="Pending Borrows" value={stats.data?.pendingBorrow ?? "—"} to="/borrow-requests" icon={ArrowLeftRight} />
+        <StatCard label="Open Builds" value={stats.data?.openBuilds ?? "—"} to="/manufacturing" search={{ tab: "open" }} icon={Factory} />
       </div>
 
       <Card className="mt-6">

@@ -16,7 +16,8 @@ import { supabase } from "@/integrations/supabase/client";
  *   packing_slip_item_serials(id, slip_item_id, serial)
  *   shipping_ticket_item_serials(id, ticket_item_id, serial)
  *   borrow_request_serials(id, request_id, serial, returned_at)
- *   v_project_serials(project_id, product_id, serial, status)   -- status: 'in_stock' | 'shipped'
+ *   v_project_serials(project_id, product_id, serial, status)   -- status: 'in_stock' | 'shipped' | 'in_system'
+ *     ('in_system' = used inside a manufactured system; finished units' IDs are listed as serials too)
  *
  * The loose client below predates the generated types and is still what these
  * helpers use: it keeps the dynamic select strings simple and the fail-soft

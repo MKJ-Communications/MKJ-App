@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
-import { QrCode, Mail, Factory, Image, History, BellRing } from "lucide-react";
+import { QrCode, Mail, Image, History, BellRing } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/future-development")({
   head: () => ({ meta: [{ title: "Future Development — MKJ Ops" }] }),
@@ -25,11 +25,6 @@ const FEATURES: FutureFeature[] = [
     title: "Email Alerts & Reminders",
     description: "Automated notifications and reminders for important activities and deadlines.",
     icon: Mail,
-  },
-  {
-    title: "Manufacturing Management",
-    description: "Track items and components that need to be manufactured and monitor their progress.",
-    icon: Factory,
   },
   {
     title: "Inventory Images",

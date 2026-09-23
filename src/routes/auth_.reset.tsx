@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, Link, ClientOnly } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -27,16 +27,11 @@ export const Route = createFileRoute("/auth_/reset")({
   component: ResetPasswordPage,
 });
 
-// Same reasoning as /auth: the server can't render recovery state, so defer
-// mounting until after hydration rather than mismatching the first paint.
-function ResetPasswordPage() {
-  return (
-    <ClientOnly fallback={null}>
-      <ResetPasswordPageContent />
-    </ClientOnly>
-  );
-}
-
+// Same reasoning as /auth: the server can't render recovery state, and the
+// router's own ssr:false handling already defers this component to a
+// client-only render — no manual <ClientOnly> wrapper needed on top of it
+// (see the comment on AuthPage in auth.tsx for why one there caused a
+// hydration mismatch).
 type Arrival = "token" | "error" | "none";
 
 /**
@@ -63,7 +58,7 @@ function readArrival(): Arrival {
 
 type Status = "checking" | "ready" | "invalid";
 
-function ResetPasswordPageContent() {
+function ResetPasswordPage() {
   const navigate = useNavigate();
   // useState initialiser, not useEffect: this must run before anything touches
   // the Supabase client, which clears the URL on initialise.

@@ -1,5 +1,5 @@
-import { createFileRoute, useNavigate, Link, ClientOnly } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,18 +25,15 @@ export const Route = createFileRoute("/auth")({
 });
 
 // This route is ssr: false — the server can't render sign-in state (session
-// check, form) meaningfully anyway. Defer mounting AuthPageContent (and its
-// hooks) until after hydration so the server/client first paint matches;
-// see https://tanstack.com/start/latest/docs/framework/react/guide/hydration-errors
+// check, form) meaningfully anyway. The router already defers this component
+// to a client-only render on its own (see MatchView in
+// @tanstack/react-router's Match.tsx, gated on the route's ssr:false option),
+// so no manual <ClientOnly> wrapper is needed here — one used to sit around
+// this function's return value and stacked a redundant boundary on top of the
+// router's own, which is what was producing the "Hydration failed...
+// <Suspense>" console error on load; see
+// https://tanstack.com/start/latest/docs/framework/react/guide/hydration-errors
 function AuthPage() {
-  return (
-    <ClientOnly fallback={null}>
-      <AuthPageContent />
-    </ClientOnly>
-  );
-}
-
-function AuthPageContent() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<"signin" | "signup">("signin");
@@ -44,6 +41,8 @@ function AuthPageContent() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [resetOpen, setResetOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("signin");
+  const submitting = useRef(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -53,8 +52,11 @@ function AuthPageContent() {
 
   async function signIn(e: React.FormEvent) {
     e.preventDefault();
+    if (submitting.current) return;
+    submitting.current = true;
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
+    submitting.current = false;
     setLoading(false);
     if (error) return toast.error(error.message);
     toast.success("Welcome back");
@@ -63,7 +65,9 @@ function AuthPageContent() {
 
   async function signUp(e: React.FormEvent) {
     e.preventDefault();
+    if (submitting.current) return;
     if (!isPasswordValid(password)) return toast.error("Password does not meet the requirements.");
+    submitting.current = true;
     setLoading(true);
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -73,17 +77,40 @@ function AuthPageContent() {
         data: { full_name: fullName },
       },
     });
-    setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      submitting.current = false;
+      setLoading(false);
+      return toast.error(error.message);
+    }
     if (data.session) {
+      submitting.current = false;
+      setLoading(false);
       toast.success("Account created. Welcome!");
       navigate({ to: "/dashboard", replace: true });
       return;
     }
-    toast.success("Account created. Check your email to confirm, then sign in below.");
-    setFullName("");
-    setPassword("");
-    setTab("signin");
+    // Supabase returns a session-less "success" with an empty identities array
+    // (no error, to avoid leaking which emails are registered) when the email
+    // already belongs to a confirmed account. Try the password the user just
+    // entered — if it's their real password, sign them in instead of lying
+    // that we sent a confirmation email.
+    if (data.user && data.user.identities?.length === 0) {
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      submitting.current = false;
+      setLoading(false);
+      if (!signInError) {
+        toast.success("Welcome back");
+        navigate({ to: "/dashboard", replace: true });
+        return;
+      }
+      toast.error("An account with this email already exists. Sign in with your existing password.");
+      setActiveTab("signin");
+      return;
+    }
+    submitting.current = false;
+    setLoading(false);
+    toast.success("Account created. Check your email to confirm before signing in.");
+    setActiveTab("signin");
   }
 
   return (
@@ -102,7 +129,7 @@ function AuthPageContent() {
             <CardDescription>Access the operations dashboard.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs value={tab} onValueChange={(v) => setTab(v as "signin" | "signup")}>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Sign in</TabsTrigger>
                 <TabsTrigger value="signup">Create account</TabsTrigger>

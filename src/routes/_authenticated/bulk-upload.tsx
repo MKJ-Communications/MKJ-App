@@ -101,20 +101,18 @@ function BulkUploadPage() {
 
           <Alert>
             <Info className="h-4 w-4" />
-            <AlertTitle>Template required</AlertTitle>
+            <AlertTitle>Use the template</AlertTitle>
             <AlertDescription>
-              The Excel file must follow the required template. Template
-              download and validation will be implemented in a future update.
+              Download the template above and fill the numbered tabs in order — later tabs refer to
+              earlier ones by Job # and part number. Its Instructions tab covers the rules that
+              matter, including why opening inventory can only be imported once. Selecting a file
+              here doesn't validate or import anything yet.
             </AlertDescription>
           </Alert>
 
           <div className="rounded-md border p-4">
             <h3 className="mb-3 text-sm font-semibold">Future capabilities</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li className="flex items-center gap-2">
-                <Download className="h-4 w-4" />
-                Download import templates
-              </li>
               <li className="flex items-center gap-2">
                 <FileSpreadsheet className="h-4 w-4" />
                 Validate columns and row data before importing

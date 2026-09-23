@@ -137,10 +137,25 @@ for key in "${KEYS[@]}"; do
     '$acc + {($skey): $subject, ($ckey): $content}')"
 done
 
-curl -fsS -X PATCH "$API" \
+# Not -f: on a 4xx/5xx, -f discards the response body and leaves only a bare
+# "curl: (22) ... 400" — exactly the case that needs the body, since that's
+# where Supabase puts the actual validation message. Capture status and body
+# separately and print the body ourselves on failure instead.
+PATCH_BODY_FILE="$(mktemp)"
+trap 'rm -f "$PATCH_BODY_FILE"' EXIT
+HTTP_STATUS="$(curl -sS -o "$PATCH_BODY_FILE" -w '%{http_code}' -X PATCH "$API" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d "$PAYLOAD" >/dev/null
+  -d "$PAYLOAD")"
+if [[ "$HTTP_STATUS" -ge 400 ]]; then
+  echo
+  echo "error: PATCH failed with HTTP $HTTP_STATUS" >&2
+  echo "--- response body ---" >&2
+  cat "$PATCH_BODY_FILE" >&2
+  echo >&2
+  echo "---------------------" >&2
+  exit 1
+fi
 
 # --- verify each remote template now matches its file -------------------
 echo

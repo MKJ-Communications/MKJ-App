@@ -5,6 +5,8 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/page-header";
 import { POStatusBadge } from "@/components/po-status-badge";
+import { PORequestStatusBadge } from "@/components/po-request-status-badge";
+import { lineLabel, usePoRequests } from "@/lib/po-requests";
 import { toast } from "sonner";
 import { openPurchaseOrderPdf } from "@/lib/po-pdf";
 import { Button } from "@/components/ui/button";
@@ -51,12 +53,13 @@ function ProjectDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("v_project_inventory")
-        .select("product_id, on_hand, products:product_id(part_number, description, unit, reorder_point)")
+        .select("product_id, on_hand, held, products:product_id(part_number, description, unit, reorder_point)")
         .eq("project_id", project.data!.id);
       if (error) throw error;
       return data as unknown as Array<{
         product_id: string;
         on_hand: number;
+        held: number;
         products: { part_number: string; description: string; unit: string; reorder_point: number } | null;
       }>;
     },
@@ -70,6 +73,8 @@ function ProjectDetail() {
       return data ?? [];
     },
   });
+
+  const poRequests = usePoRequests({ projectId: project.data?.id, enabled: !!project.data });
 
   const tickets = useQuery({
     queryKey: ["st-list", project.data?.id],
@@ -150,6 +155,7 @@ function ProjectDetail() {
                     <TableHead>Part #</TableHead>
                     <TableHead>Description</TableHead>
                     <TableHead className="text-right">On Hand</TableHead>
+                    <TableHead className="text-right" title="Reserved for manufacturing build requests">Held</TableHead>
                     <TableHead className="text-right">Reorder Point</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -189,11 +195,12 @@ function ProjectDetail() {
                                 <Badge variant="destructive" className="ml-2">Low</Badge>
                               ) : null}
                             </TableCell>
+                            <TableCell className="text-right text-muted-foreground">{Number(r.held) > 0 ? Number(r.held) : "—"}</TableCell>
                             <TableCell className="text-right text-muted-foreground">{r.products?.reorder_point ?? 0}</TableCell>
                           </TableRow>
                           {serialsOn && isOpen ? (
                             <TableRow>
-                              <TableCell colSpan={4} className="bg-muted/30">
+                              <TableCell colSpan={5} className="bg-muted/30">
                                 <div className="flex flex-wrap gap-1">
                                   {serials.map((s) => (
                                     <span key={s} className="rounded-full bg-background px-2 py-0.5 font-mono text-[10px]">{s}</span>
@@ -206,7 +213,7 @@ function ProjectDetail() {
                       );
                     })
                   ) : (
-                    <TableRow><TableCell colSpan={4} className="py-6 text-center text-sm text-muted-foreground">No inventory yet.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="py-6 text-center text-sm text-muted-foreground">No inventory yet.</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -216,8 +223,36 @@ function ProjectDetail() {
         </TabsContent>
 
 
-        <TabsContent value="pos" className="pt-4">
+        <TabsContent value="pos" className="space-y-4 pt-4">
           <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-base">PO requests</CardTitle></CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Request #</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Items</TableHead>
+                    <TableHead>Requested by</TableHead>
+                    <TableHead>Created</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {poRequests.data && poRequests.data.rows.length > 0 ? poRequests.data.rows.map((r) => (
+                    <TableRow key={r.id}>
+                      <TableCell><Link className="font-mono text-primary hover:underline" to="/purchase-orders" search={{ request: r.id }}>{r.request_number}</Link></TableCell>
+                      <TableCell><PORequestStatusBadge status={r.status} poReference={r.po_reference} /></TableCell>
+                      <TableCell><div className="max-w-xs truncate text-sm" title={r.lines.map(lineLabel).join(", ")}>{r.lines.map(lineLabel).join(", ")}</div></TableCell>
+                      <TableCell>{r.requester_name ?? "—"}</TableCell>
+                      <TableCell>{new Date(r.created_at).toLocaleDateString()}</TableCell>
+                    </TableRow>
+                  )) : <TableRow><TableCell colSpan={5} className="py-6 text-center text-sm text-muted-foreground">No PO requests yet.</TableCell></TableRow>}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-base">Purchase orders</CardTitle></CardHeader>
             <CardContent className="p-0">
               <Table>
                 <TableHeader>

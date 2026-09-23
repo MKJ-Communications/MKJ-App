@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useRoles } from "@/hooks/use-session";
 import { isWarehouseOrAdmin } from "@/lib/roles";
-import { refreshPoStatus, resolveProductId, slipStatusFor, syncSlipInventory } from "@/lib/receiving";
+import { assertSlipEditKeepsHeldStock, refreshPoStatus, resolveProductId, slipStatusFor, syncSlipInventory } from "@/lib/receiving";
 import { SerialNumberInputs } from "@/components/serial-number-inputs";
 import {
   countFilled, fetchSlipItemSerials, resizeSerials, saveSlipItemSerials, useSerialSupport, useSerializedProducts,
@@ -97,6 +97,10 @@ export function PackingSlipEditDialog({
         });
         resolved.push({ ...l, product_id });
       }
+
+      // Refuse up front if a lowered quantity would eat into stock held for
+      // manufacturing; the lines below are saved before stock is synced.
+      await assertSlipEditKeepsHeldStock({ projectId: slip.project_id, before: items, after: resolved });
 
       for (const l of resolved) {
         if (serialsOn && isSerialized(l.product_id)) {

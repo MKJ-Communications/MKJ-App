@@ -273,7 +273,7 @@ returns `application/pdf` bytes as an object URL.
 Set from quantities on create; recomputed on edit.
 
 ### Shipping ticket — `ticket_status`
-`draft → ready → shipped → delivered`
+`draft → ready → shipped → delivered → closed`
 
 - `create_shipping_ticket` opens tickets as **`ready`**; `draft` is only reachable by
   editing backwards, which reverses inventory.
@@ -281,9 +281,9 @@ Set from quantities on create; recomputed on edit.
 - **Mark delivered** → dialog capturing `delivered_by`, `received_by`, `pass_number`
   and a **required** photo/scan, uploaded to `shipping-ticket-proofs` and recorded in
   `signature_url` with `received_date`.
-- ⚠️ The frontend status list includes a fifth value, **`closed`**, which is **not in
-  the `ticket_status` enum** — it is unreachable, and the edit/delete guards that test
-  for it are dead branches. Harmless, but stale.
+- `closed` (added to the enum 2026-09-10) is set via the edit dialog's status
+  dropdown, not a dedicated action. `canEditTicket`/`canDeleteTicket` then restrict
+  the ticket to admin-only, same as `delivered`.
 
 ### Borrow request — `borrow_status`
 `pending → approved | partially_approved | denied | cancelled`
@@ -306,7 +306,6 @@ Descriptive notes only; detail and status live in the findings documents.
 | `/bulk-upload` | Page exists, has **no backend calls**; route is unguarded (L-05) |
 | Create buttons | Shown to roles that cannot complete them (L-06) |
 | Document numbers | `MAX+1` per project — freed and reused after a delete (L-09) |
-| `ticket_status.closed` | In the frontend list, absent from the enum (§9) |
 | `shipping_tickets` RLS | Single `FOR ALL` policy; did not get the F-05 split (§3) |
 | `project_managers` | Only the trigger can write it — no admin UI for extra rows (L-10) |
 | RLS-blocked writes | Return `200`/`204` with zero rows rather than an error (L-11) |

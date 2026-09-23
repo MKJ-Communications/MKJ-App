@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,15 +22,28 @@ import {
 
 export const Route = createFileRoute("/_authenticated/users")({
   head: () => ({ meta: [{ title: "Users & Roles — MKJ Ops" }] }),
+  // Redirect from the component, not beforeLoad — see _authenticated/route.tsx.
   beforeLoad: async () => {
     const { data } = await supabase.auth.getUser();
-    if (!data.user) throw redirect({ to: "/auth" });
+    // No user: the parent layout sends them to /auth and never renders this page.
+    if (!data.user) return { isAdmin: false };
     const { data: adminRow } = await supabase
       .from("user_roles").select("role").eq("user_id", data.user.id).eq("role", "admin").maybeSingle();
-    if (!adminRow) throw redirect({ to: "/dashboard" });
+    return { isAdmin: !!adminRow };
   },
-  component: UsersPage,
+  component: UsersRoute,
 });
+
+function UsersRoute() {
+  const { isAdmin } = Route.useRouteContext();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isAdmin) navigate({ to: "/dashboard", replace: true });
+  }, [isAdmin, navigate]);
+
+  return isAdmin ? <UsersPage /> : null;
+}
 
 const ALL_ROLES: AppRole[] = ["admin", "warehouse_manager", "manager", "engineer"];
 

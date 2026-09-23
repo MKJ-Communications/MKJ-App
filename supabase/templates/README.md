@@ -115,9 +115,36 @@ measured `ctaWidth`) and a `[auth.email.template.<key>]` block in
 `supabase/config.toml` points at these same files so `supabase start` uses them
 locally.
 
-## Sending limits
+## Sending limits, and why templates may refuse to push at all
 
-The project is still on Supabase's built-in SMTP, which is rate-limited to a
-handful of messages an hour and is not intended for production. Branded
-templates do not change that. Configuring custom SMTP (Resend, Postmark) is
-tracked as a pending decision in [`CLAUDE.md`](../../CLAUDE.md).
+The project is still on Supabase's built-in SMTP, which has two separate
+restrictions, confirmed directly against Supabase's error messages and docs:
+
+- **Delivery is restricted to the project's Team page.** Anyone else gets
+  "Email address not authorized" — silently, with no error surfaced to the
+  registering user.
+- **On the free tier, the Management API refuses to edit templates at all**
+  while a project is on the default mailer — `push_auth_email_templates.sh`
+  fails with HTTP 400: *"Email template modification is not available for
+  free tier projects using the default email provider. Please upgrade your
+  plan or configure a custom SMTP provider."*
+
+[`configure_smtp.sh`](configure_smtp.sh) wires the project up to
+[Resend](https://resend.com) and fixes both at once — custom SMTP satisfies
+the "or configure a custom SMTP provider" clause above, and once it's live
+regular email addresses can actually receive mail. It requires a Resend
+account, an API key, and — importantly — **a domain verified in Resend**;
+the script checks verification status via Resend's API before touching
+Supabase, so it won't wire in a domain that isn't ready yet and would just
+bounce every message:
+
+```bash
+export SUPABASE_ACCESS_TOKEN='sbp_...'   # supabase.com/dashboard/account/tokens
+export RESEND_API_KEY='re_...'           # resend.com/api-keys
+export SMTP_FROM_EMAIL='no-reply@yourverifieddomain.com'
+./supabase/maintenance/configure_smtp.sh          # preview + confirm + apply
+./supabase/maintenance/configure_smtp.sh --show   # read-only: current config
+```
+
+Then re-run `push_auth_email_templates.sh` — it should succeed once SMTP is
+live. This is tracked as a pending decision in [`CLAUDE.md`](../../CLAUDE.md).

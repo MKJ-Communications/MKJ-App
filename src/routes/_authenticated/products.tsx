@@ -10,16 +10,29 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageHeader } from "@/components/page-header";
+import { ProductPricesDialog } from "@/components/product-prices-dialog";
 import { toast } from "sonner";
-import { Plus, Search, Pencil } from "lucide-react";
-import { useRoles } from "@/hooks/use-session";
-import { isWarehouseOrAdmin } from "@/lib/roles";
+import { Plus, Search, Pencil, DollarSign } from "lucide-react";
+import { useRoles, useSession } from "@/hooks/use-session";
+import { isWarehouseOrAdmin, canWrite as canSeeCostRoles } from "@/lib/roles";
 import { useSerialSupport } from "@/lib/serials";
 
 type Product = {
   id: string; part_number: string; description: string; unit: string; reorder_point: number;
   is_serialized?: boolean | null;
+};
+
+// Row shape of v_products_with_cost: products plus the one cost to show,
+// derived from supplier_prices rather than stored. See
+// supabase/migrations/20260908235000_supplier_prices.sql.
+type ProductWithCost = Product & {
+  default_cost: number | null;
+  default_cost_unit: string | null;
+  cost_updated_at: string | null;
+  default_source: string | null;
+  price_count: number | null;
 };
 
 export const Route = createFileRoute("/_authenticated/products")({
@@ -30,6 +43,12 @@ export const Route = createFileRoute("/_authenticated/products")({
 function ProductsPage() {
   const { data: roles = [] } = useRoles();
   const canWrite = isWarehouseOrAdmin(roles);
+  // Same predicate as supplier_prices' SELECT policy (can_write: admin,
+  // warehouse_manager, manager). Engineers never see cost data -- and even
+  // without this check the view would just come back with nulls for them,
+  // since it's security_invoker and RLS hides the price rows either way.
+  const canSeeCost = canSeeCostRoles(roles);
+  const { userId } = useSession();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -40,14 +59,40 @@ function ProductsPage() {
   const [serialized, setSerialized] = useState(false);
   // Serial tracking only shows once the backend schema is in place.
   const serialsOn = useSerialSupport().data === true;
+  const [pricesFor, setPricesFor] = useState<ProductWithCost | null>(null);
+
+  // Optional "set a price while creating the part" section on the New
+  // Product dialog. Left blank, product creation behaves exactly as before --
+  // this never becomes a required field. Filled in, it's a second insert into
+  // supplier_prices right after the product exists (that table can't be
+  // written to before the product it references does).
+  // "" = no vendor chosen, "__other__" = marketplace (same sentinel pattern
+  // as the supplier picker on purchase-orders.new.tsx).
+  const [priceSupplierId, setPriceSupplierId] = useState("");
+  const [priceSourceLabel, setPriceSourceLabel] = useState("");
+  const [priceCost, setPriceCost] = useState("");
+  const [priceSku, setPriceSku] = useState("");
+
+  function resetPriceFields() {
+    setPriceSupplierId("");
+    setPriceSourceLabel("");
+    setPriceCost("");
+    setPriceSku("");
+  }
 
   const products = useQuery({
-    queryKey: ["products"],
+    queryKey: ["products-with-cost"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("products").select("*").order("part_number");
+      const { data, error } = await supabase.from("v_products_with_cost").select("*").order("part_number");
       if (error) throw error;
-      return data;
+      return data as ProductWithCost[];
     },
+  });
+
+  const suppliers = useQuery({
+    queryKey: ["suppliers"],
+    enabled: open && canSeeCost,
+    queryFn: async () => (await supabase.from("suppliers").select("id, name").order("name")).data ?? [],
   });
 
   const term = q.trim().toLowerCase();
@@ -60,22 +105,51 @@ function ProductsPage() {
     });
   }, [products.data, term]);
 
+  const priceFieldsFilled =
+    priceCost.trim() !== "" && (priceSupplierId === "__other__" ? !!priceSourceLabel.trim() : !!priceSupplierId);
+
   const createMut = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("products").insert({
-        part_number: pn.trim(),
-        description: desc.trim(),
-        unit: unit.trim() || "ea",
-        reorder_point: rp,
-        ...(serialsOn ? { is_serialized: serialized } : {}),
-      } as never);
+    mutationFn: async (): Promise<{ priceWarning?: string }> => {
+      const { data: newProduct, error } = await supabase
+        .from("products")
+        .insert({
+          part_number: pn.trim(),
+          description: desc.trim(),
+          unit: unit.trim() || "ea",
+          reorder_point: rp,
+          ...(serialsOn ? { is_serialized: serialized } : {}),
+        } as never)
+        .select("id")
+        .single();
       if (error) throw error;
+
+      // The product exists now, whether or not the price below succeeds --
+      // so a price failure is reported, not thrown. Throwing here would tell
+      // onError to treat this as "nothing happened," when the part was in
+      // fact created and is sitting in the list waiting for its price to be
+      // added via the $ button instead.
+      if (priceFieldsFilled) {
+        const { error: priceError } = await supabase.from("supplier_prices").insert({
+          product_id: (newProduct as { id: string }).id,
+          supplier_id: priceSupplierId === "__other__" ? null : priceSupplierId,
+          source_label: priceSupplierId === "__other__" ? priceSourceLabel.trim() : null,
+          supplier_sku: priceSku.trim() || null,
+          unit_cost: Number(priceCost),
+          unit: unit.trim() || "ea",
+          is_preferred: true,
+          created_by: userId,
+        });
+        if (priceError) return { priceWarning: priceError.message };
+      }
+      return {};
     },
-    onSuccess: () => {
+    onSuccess: ({ priceWarning }) => {
       toast.success("Product added");
+      if (priceWarning) toast.warning(`Price wasn't saved (${priceWarning}) — add it from the $ button on this part.`);
       setOpen(false);
       setPn(""); setDesc(""); setUnit("ea"); setRp(0); setSerialized(false);
-      qc.invalidateQueries({ queryKey: ["products"] });
+      resetPriceFields();
+      qc.invalidateQueries({ queryKey: ["products-with-cost"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -111,7 +185,7 @@ function ProductsPage() {
     onSuccess: () => {
       toast.success("Product updated");
       setEditing(null);
-      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["products-with-cost"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -142,9 +216,40 @@ function ProductsPage() {
                     </span>
                   </label>
                 ) : null}
+
+                {canSeeCost ? (
+                  <div className="rounded-md border p-3">
+                    <p className="text-sm font-medium">Initial cost (optional)</p>
+                    <p className="mb-2 text-xs text-muted-foreground">
+                      Buy this part from one place already? Set its price now. Otherwise skip this — you can add
+                      pricing later, and add more vendors, from the $ button on the Products list.
+                    </p>
+                    <div className="space-y-2">
+                      <Select value={priceSupplierId} onValueChange={setPriceSupplierId}>
+                        <SelectTrigger><SelectValue placeholder="Vendor (optional)" /></SelectTrigger>
+                        <SelectContent>
+                          {suppliers.data?.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                          <SelectItem value="__other__">Marketplace (Amazon, eBay…)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {priceSupplierId === "__other__" && (
+                        <Input placeholder="e.g. Amazon" value={priceSourceLabel} onChange={(e) => setPriceSourceLabel(e.target.value)} />
+                      )}
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input
+                          type="number" step="0.01" min={0} inputMode="decimal"
+                          placeholder="Cost"
+                          value={priceCost}
+                          onChange={(e) => setPriceCost(e.target.value)}
+                        />
+                        <Input placeholder="Vendor SKU (optional)" value={priceSku} onChange={(e) => setPriceSku(e.target.value)} />
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+                <Button variant="outline" onClick={() => { setOpen(false); resetPriceFields(); }}>Cancel</Button>
                 <Button onClick={() => createMut.mutate()} disabled={!pn || !desc || createMut.isPending}>{createMut.isPending ? "Adding…" : "Add"}</Button>
               </DialogFooter>
             </DialogContent>
@@ -165,7 +270,9 @@ function ProductsPage() {
       <Card><CardContent className="p-0">
         <Table>
           <TableHeader><TableRow>
-            <TableHead>Part #</TableHead><TableHead>Description</TableHead><TableHead>Unit</TableHead>{serialsOn ? <TableHead>Serials</TableHead> : null}<TableHead className="text-right">Reorder point</TableHead><TableHead />
+            <TableHead>Part #</TableHead><TableHead>Description</TableHead><TableHead>Unit</TableHead>{serialsOn ? <TableHead>Serials</TableHead> : null}<TableHead className="text-right">Reorder point</TableHead>
+            {canSeeCost ? <><TableHead className="text-right">Cost</TableHead><TableHead>Updated</TableHead></> : null}
+            <TableHead />
           </TableRow></TableHeader>
           <TableBody>
             {filtered.length > 0 ? filtered.map((p) => (
@@ -179,15 +286,37 @@ function ProductsPage() {
                   </TableCell>
                 ) : null}
                 <TableCell className="text-right">{p.reorder_point}</TableCell>
+                {canSeeCost ? (
+                  <>
+                    <TableCell className="text-right">
+                      {p.default_cost != null ? (
+                        <div className="font-mono">
+                          ${Number(p.default_cost).toFixed(2)}/{p.default_cost_unit}
+                          {p.default_source ? <div className="text-xs font-normal text-muted-foreground">{p.default_source}</div> : null}
+                        </div>
+                      ) : <span className="text-xs text-muted-foreground">—</span>}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {p.cost_updated_at ? new Date(p.cost_updated_at).toLocaleDateString() : "—"}
+                    </TableCell>
+                  </>
+                ) : null}
                 <TableCell className="text-right">
-                  {canWrite ? (
-                    <Button size="icon" variant="ghost" aria-label="Edit product" onClick={() => openEdit(p)}>
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                  ) : null}
+                  <div className="flex justify-end gap-1">
+                    {canSeeCost ? (
+                      <Button size="icon" variant="ghost" aria-label={`Prices for ${p.part_number}`} onClick={() => setPricesFor(p)}>
+                        <DollarSign className="h-3.5 w-3.5" />
+                      </Button>
+                    ) : null}
+                    {canWrite ? (
+                      <Button size="icon" variant="ghost" aria-label="Edit product" onClick={() => openEdit(p)}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    ) : null}
+                  </div>
                 </TableCell>
               </TableRow>
-            )) : <TableRow><TableCell colSpan={serialsOn ? 6 : 5} className="py-6 text-center text-sm text-muted-foreground">{term ? "No matches." : "No products yet."}</TableCell></TableRow>}
+            )) : <TableRow><TableCell colSpan={serialsOn ? (canSeeCost ? 8 : 6) : (canSeeCost ? 7 : 5)} className="py-6 text-center text-sm text-muted-foreground">{term ? "No matches." : "No products yet."}</TableCell></TableRow>}
           </TableBody>
         </Table>
       </CardContent></Card>
@@ -218,6 +347,17 @@ function ProductsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {pricesFor ? (
+        <ProductPricesDialog
+          open={!!pricesFor}
+          onOpenChange={(o) => !o && setPricesFor(null)}
+          productId={pricesFor.id}
+          partNumber={pricesFor.part_number}
+          description={pricesFor.description}
+          canEdit={canWrite}
+        />
+      ) : null}
     </div>
   );
 }

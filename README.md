@@ -1,24 +1,34 @@
 # MKJ App
 
-I want to create a web/mobile app to help with some processes that are manual right now. these processes include handling purchases orders, packing slips inventory and shipping tickets. I want to work on an MVP first so I can show it to the owner and managers and they can decide if they want to continue with the idea
+An internal operations app for managing purchase orders, packing slips, inventory, manufacturing (build requests), and shipping tickets — replacing manual, paper-based processes with a single system for warehouse managers, project managers, engineers, and admins.
 
-This project was built with [Lovable](https://lovable.dev).
+## Tech Stack
 
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/2cd50fae-8ed7-4555-85f8-cbfeb6a57635).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+- **Frontend**: React 19, TanStack Start / TanStack Router, Vite, TypeScript
+- **UI**: Tailwind CSS v4, shadcn/ui (Radix UI primitives), Lucide icons
+- **Data & forms**: TanStack Query, React Hook Form, Zod
+- **Backend**: [Supabase](https://supabase.com) — Postgres database, authentication, storage, Row Level Security, and Edge Functions (PDF generation for POs and shipping tickets)
+- **Hosting**: Vercel
+- **Package manager**: [Bun](https://bun.sh)
 
 ## Development
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+You'll need [Bun](https://bun.sh) installed.
 
 ```sh
 git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+cd mkj-app
+bun install
+bun run dev
+```
+
+Environment variables (Supabase URL and publishable key) are required — see `.env.local` for local development.
+
+## Other scripts
+
+```sh
+bun run build      # production build
+bun run lint        # lint
+bun run format      # format with prettier
+bun run emails       # build branded auth email templates from supabase/templates/
 ```

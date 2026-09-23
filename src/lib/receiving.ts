@@ -92,49 +92,64 @@ export function slipStatusFor(lines: { qty_ordered: number; qty_received: number
 /**
  * Recompute a PO's received status from every packing slip logged against it.
  *
- * Receiving never sets Approved/Executed — those stay manual. The PO's status
- * from just before its first receipt is stashed in `pre_receipt_status` so the
- * PO can fall back to it if every receipt is later removed/zeroed out.
+ * Runs in the database (refresh_po_status) rather than here: project managers
+ * receive shipments but have no UPDATE rights on purchase_orders, so a direct
+ * update from the browser would be silently dropped by RLS. Receiving never
+ * sets Approved/Executed — those stay manual. The status from just before the
+ * first receipt is kept in `pre_receipt_status` so the PO can fall back to it
+ * if every receipt is later removed/zeroed out.
  */
 export async function refreshPoStatus(poId: string) {
-  const [{ data: po }, { data: poItems }, { data: slipItems }] = await Promise.all([
-    supabase.from("purchase_orders").select("status, pre_receipt_status").eq("id", poId).maybeSingle(),
-    supabase.from("purchase_order_items").select("id, qty").eq("po_id", poId),
-    supabase
-      .from("packing_slip_items")
-      .select("po_item_id, qty_received, packing_slips!inner(po_id)")
-      .eq("packing_slips.po_id", poId),
-  ]);
-  const received = new Map<string, number>();
-  (slipItems ?? []).forEach((s) => {
-    if (!s.po_item_id) return;
-    received.set(s.po_item_id, (received.get(s.po_item_id) ?? 0) + Number(s.qty_received));
-  });
+  const { error } = await supabase.rpc("refresh_po_status", { _po_id: poId });
+  if (error) throw error;
+}
 
-  const anyReceived = [...received.values()].some((q) => q > 0);
-  if (!anyReceived) {
-    if (!po?.pre_receipt_status) {
-      // Unknown pre-receipt status (this PO's first receipt predates the
-      // column) — don't guess a status, leave it for a human to correct.
-      return;
+/**
+ * Lowering a slip's received quantities takes that stock back out of the
+ * project. If manufacturing build requests hold it, the database refuses the
+ * stock update (guard_held_stock) -- but the edit dialog saves the slip lines
+ * from the browser *before* syncing stock, so a refusal there would leave the
+ * slip saved with quantities the stock doesn't match. Check first, before
+ * anything is written. Totals mirror sync_packing_slip_inventory: every line
+ * with a product and qty_received > 0, whatever its condition.
+ */
+export async function assertSlipEditKeepsHeldStock(params: {
+  projectId: string;
+  before: SlipInventoryLine[];
+  after: SlipInventoryLine[];
+}) {
+  const totals = (lines: SlipInventoryLine[]) => {
+    const m = new Map<string, number>();
+    for (const l of lines) {
+      if (l.product_id && Number(l.qty_received) > 0) m.set(l.product_id, (m.get(l.product_id) ?? 0) + Number(l.qty_received));
     }
-    // No receipts left — revert to whatever the PO was before the first one.
-    await supabase
-      .from("purchase_orders")
-      .update({ status: po.pre_receipt_status, pre_receipt_status: null })
-      .eq("id", poId);
-    return;
-  }
+    return m;
+  };
+  const before = totals(params.before);
+  const after = totals(params.after);
+  const drops = [...before]
+    .map(([productId, qty]) => ({ productId, drop: qty - (after.get(productId) ?? 0) }))
+    .filter((d) => d.drop > 0);
+  if (drops.length === 0) return;
 
-  const anyOpen = (poItems ?? []).some((i) => (received.get(i.id) ?? 0) < Number(i.qty));
-  const isReceipt = po?.status === "received" || po?.status === "partially_received";
-  await supabase
-    .from("purchase_orders")
-    .update({
-      status: anyOpen ? "partially_received" : "received",
-      // Only capture the pre-receipt status on the first receipt.
-      ...(po && !isReceipt && !po.pre_receipt_status ? { pre_receipt_status: po.status } : {}),
-    })
-    .eq("id", poId);
+  const { data, error } = await supabase
+    .from("v_project_inventory")
+    .select("product_id, held, available, products:product_id(part_number)")
+    .eq("project_id", params.projectId)
+    .in("product_id", drops.map((d) => d.productId));
+  if (error) throw error;
+
+  for (const { productId, drop } of drops) {
+    const row = (data ?? []).find((r) => r.product_id === productId);
+    const held = Number(row?.held ?? 0);
+    const available = Number(row?.available ?? 0);
+    // Only stock held for manufacturing blocks the edit; everything else behaves as before.
+    if (held > 0 && drop > available) {
+      const part = (row?.products as { part_number: string } | null)?.part_number ?? "A part";
+      throw new Error(
+        `${part}: this change takes ${drop} out of stock, but only ${available} can be used — ${held} is held for manufacturing. Nothing was saved.`,
+      );
+    }
+  }
 }
 

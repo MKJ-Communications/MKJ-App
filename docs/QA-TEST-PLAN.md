@@ -189,9 +189,9 @@ test in the plan.**
 | ST-14 | Delete a **delivered** ticket as `wh@` | Refused by the RPC, not just hidden | |
 | ST-15 | Delete a delivered ticket as `admin@` | Allowed; inventory returned | |
 | ST-16 | Ticket detail for a bad/inaccessible ID | "Not found." | **R** (F-24) |
-| ST-17 | **Mark delivered — who received it?** | **No capture exists.** `received_by`, `delivered_by`, `pass_number`, `signature_url` stay null | **O** (F-13) |
-| ST-18 | **Upload Signed Ticket button (delivered ticket)** | Opens, accepts a file, then toasts *"upload isn't wired up yet"*. Nothing stored, status unchanged | **O** (F-13) |
-| ST-19 | Try to reach status `closed` | **Unreachable** — `closed` is in the frontend list but not in the `ticket_status` enum | **O** (F-13) |
+| ST-17 | **Mark delivered — who received it?** | Requires `delivered_by`, `received_by` and a photo/scan before it will save (`pass_number` optional); all four columns plus `received_date` are written in one step | **R** (F-13) |
+| ST-18 | **Mark delivered with no proof photo/scan attached** | Rejected — *"A photo or scan of the signed ticket is required"*. Nothing saved | **R** (F-13) |
+| ST-19 | Move a ticket to status `closed` via the edit dialog | **Reachable.** Saves; `canEditTicket`/`canDeleteTicket` then restrict it to admin-only | **R** (F-13) |
 
 ---
 
@@ -257,7 +257,7 @@ test in the plan.**
 | PDF-13 | **Freight and grand total** | PDF matches detail page and editor exactly | **R** (F-14) |
 | PDF-14 | Ticket PDF: contract number changed on the project | Cache invalidates | |
 | PDF-15 | Leave the tab, reload after ~10 minutes | Still valid — TTL is 3600s | **R** (F-37) |
-| PDF-16 | Ticket PDF proof-of-delivery block | Blank hand-completion rules; nothing read back into the system | **O** (F-13) |
+| PDF-16 | Ticket PDF proof-of-delivery block, on a delivered ticket | Delivered by / Received by / Pass # / Print name / Date are filled from the ticket's captured data, not blank | **R** (F-13) |
 | PDF-17 | Concurrent views of the same stale PO | Both succeed; no upload conflict | |
 
 ---
@@ -327,9 +327,6 @@ gaps, not defect hunting.
 - **IN-04** passes three consecutive times on a freshly seeded database.
 - The **A**-tagged cases behave as documented; if any surprises the business,
   raise it as a product question rather than a defect.
-- **F-13** either implemented or explicitly deferred in writing by the owner —
-  the app currently ships a delivery workflow whose proof-of-delivery step exists
-  only on paper, and an Upload button that does nothing.
 - The F-07 stale-`project_managers` audit has been run against production.
 - A documented backup/restore path for the Supabase project, since the ledger is
   append-only and there is no way to undo a corrupted inventory history from

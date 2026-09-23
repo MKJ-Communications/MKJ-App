@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +15,8 @@ import { toast } from "sonner";
 import { ArrowLeft, FileText, Plus, Trash } from "lucide-react";
 import { previewDraftPurchaseOrderPdf } from "@/lib/po-pdf";
 import { AssigneeSelect } from "@/components/assignee-select";
+import { useRoles } from "@/hooks/use-session";
+import { isWarehouseOrAdmin } from "@/lib/roles";
 
 export const Route = createFileRoute("/_authenticated/purchase-orders/new")({
   head: () => ({ meta: [{ title: "New Purchase Order — MKJ Ops" }] }),
@@ -25,6 +27,7 @@ type Line = { line_no: number; budget_code: string; description: string; qty: nu
 
 function NewPO() {
   const navigate = useNavigate();
+  const roles = useRoles();
   const projects = useQuery({ queryKey: ["projects", "active"], queryFn: async () => (await supabase.from("projects").select("id, mkj_number, name, description").eq("status", "active").order("mkj_number")).data ?? [] });
   const suppliers = useQuery({ queryKey: ["suppliers"], queryFn: async () => (await supabase.from("suppliers").select("id, name, address, phone").order("name")).data ?? [] });
 
@@ -118,6 +121,23 @@ function NewPO() {
   }
   function removeLine(i: number) {
     setLines((ls) => ls.filter((_, idx) => idx !== i).map((l, idx) => ({ ...l, line_no: idx + 1 })));
+  }
+
+  // Only warehouse managers and admins create POs (create_purchase_order
+  // enforces it); anyone else reaching this URL gets pointed to Request a PO.
+  if (roles.isSuccess && !isWarehouseOrAdmin(roles.data)) {
+    return (
+      <div className="mx-auto max-w-2xl">
+        <PageHeader title="New Purchase Order" backTo="/purchase-orders" />
+        <Card><CardContent className="space-y-3 p-6 text-sm">
+          <p>Purchase orders are created by warehouse managers and admins.</p>
+          <p className="text-muted-foreground">
+            To get something ordered for your project, use <strong className="text-foreground">Request a PO</strong> on the Purchase Orders page. The warehouse is notified and writes the PO.
+          </p>
+          <Link to="/purchase-orders"><Button>Go to Purchase Orders</Button></Link>
+        </CardContent></Card>
+      </div>
+    );
   }
 
   return (

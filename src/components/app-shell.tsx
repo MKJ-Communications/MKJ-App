@@ -10,6 +10,7 @@ import {
   ClipboardList,
   Warehouse,
   ArrowLeftRight,
+  Factory,
   Bell,
   Users,
   Building2,
@@ -50,6 +51,8 @@ const NAV: NavItem[] = [
   { to: "/shipping-tickets", label: "Shipping Tickets", icon: Truck },
   { to: "/inventory", label: "Inventory", icon: Warehouse },
   { to: "/borrow-requests", label: "Borrow Requests", icon: ArrowLeftRight },
+  // Build requests; Systems (templates) is one click away from there.
+  { to: "/manufacturing", label: "Manufacturing", icon: Factory },
   { to: "/products", label: "Products", icon: Package, warehouseOnly: true },
   { to: "/suppliers", label: "Suppliers", icon: Building2, warehouseOnly: true },
   { to: "/users", label: "Users & Roles", icon: Users, adminOnly: true },
@@ -96,10 +99,11 @@ function NotificationsBell() {
     enabled: !!userId,
     refetchInterval: 30_000,
     queryFn: async () => {
-      const { count } = await supabase
+      const { count, error } = await supabase
         .from("notifications")
         .select("*", { count: "exact", head: true })
         .is("read_at", null);
+      if (error) throw error;
       return count ?? 0;
     },
   });

@@ -198,8 +198,8 @@ function BorrowPage() {
     queryKey: ["onhand", sourceId, productId],
     enabled: !!sourceId && !!productId,
     queryFn: async () => {
-      const { data } = await supabase.from("v_project_inventory").select("on_hand").eq("project_id", sourceId).eq("product_id", productId).maybeSingle();
-      return Number(data?.on_hand ?? 0);
+      const { data } = await supabase.from("v_project_inventory").select("available").eq("project_id", sourceId).eq("product_id", productId).maybeSingle();
+      return Number(data?.available ?? 0);
     },
   });
 
@@ -207,8 +207,8 @@ function BorrowPage() {
     queryKey: ["onhand", approving?.source_project_id, approving?.product_id],
     enabled: !!approving,
     queryFn: async () => {
-      const { data } = await supabase.from("v_project_inventory").select("on_hand").eq("project_id", approving!.source_project_id).eq("product_id", approving!.product_id).maybeSingle();
-      return Number(data?.on_hand ?? 0);
+      const { data } = await supabase.from("v_project_inventory").select("available").eq("project_id", approving!.source_project_id).eq("product_id", approving!.product_id).maybeSingle();
+      return Number(data?.available ?? 0);
     },
   });
 
@@ -216,8 +216,8 @@ function BorrowPage() {
     queryKey: ["onhand", returning?.target_project_id, returning?.product_id],
     enabled: !!returning,
     queryFn: async () => {
-      const { data } = await supabase.from("v_project_inventory").select("on_hand").eq("project_id", returning!.target_project_id).eq("product_id", returning!.product_id).maybeSingle();
-      return Number(data?.on_hand ?? 0);
+      const { data } = await supabase.from("v_project_inventory").select("available").eq("project_id", returning!.target_project_id).eq("product_id", returning!.product_id).maybeSingle();
+      return Number(data?.available ?? 0);
     },
   });
 
@@ -337,7 +337,7 @@ function BorrowPage() {
                       <SelectContent>{products.data?.map((p) => <SelectItem key={p.id} value={p.id}>{p.part_number} — {p.description}</SelectItem>)}</SelectContent>
                     </Select>
                     {sourceId && productId ? (
-                      <p className="mt-1 text-xs text-muted-foreground">Source on-hand: <span className="font-mono font-semibold">{onHand.data ?? 0}</span></p>
+                      <p className="mt-1 text-xs text-muted-foreground">Available at source: <span className="font-mono font-semibold">{onHand.data ?? 0}</span></p>
                     ) : null}
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -430,7 +430,7 @@ function BorrowPage() {
                 <Input type="number" min={1} max={Number(approving.qty_requested)} step={1} inputMode="numeric" value={approveQty}
                   onChange={(e) => setApproveQty(Math.min(Number(approving.qty_requested), Math.max(1, Math.trunc(Number(e.target.value) || 1))))} />
                 <p className="mt-1 text-xs text-muted-foreground">
-                  On hand at {approving.source?.mkj_number}: <span className="font-mono font-semibold">{approveOnHand.data ?? 0}</span>
+                  Available at {approving.source?.mkj_number}: <span className="font-mono font-semibold">{approveOnHand.data ?? 0}</span>
                   {approveQty < Number(approving.qty_requested) ? " — this will be recorded as a partial approval." : ""}
                 </p>
               </div>
@@ -489,8 +489,8 @@ function BorrowPage() {
                 <Input type="number" min={1} step={1} inputMode="numeric" value={returnQty}
                   onChange={(e) => setReturnQty(Math.max(1, Math.trunc(Number(e.target.value) || 1)))} />
                 <p className="mt-1 text-xs text-muted-foreground">
-                  On hand at {returning.target?.mkj_number}: <span className="font-mono font-semibold">{returnOnHand.data ?? 0}</span>
-                  {returnQty > outstanding ? " — exceeds the outstanding amount." : returnQty > (returnOnHand.data ?? 0) ? " — exceeds on-hand stock." : returnQty < outstanding ? " — this will be recorded as a partial return." : ""}
+                  Available at {returning.target?.mkj_number}: <span className="font-mono font-semibold">{returnOnHand.data ?? 0}</span>
+                  {returnQty > outstanding ? " — exceeds the outstanding amount." : returnQty > (returnOnHand.data ?? 0) ? " — exceeds available stock." : returnQty < outstanding ? " — this will be recorded as a partial return." : ""}
                 </p>
               </div>
               {isSerialized(returning.product_id) && returnCandidates.length > 0 ? (

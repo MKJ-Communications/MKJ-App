@@ -9,77 +9,69 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AuthenticatedAccountSettingsRouteImport } from './routes/_authenticated/account-settings'
-import { Route as AuthenticatedBorrowRequestsRouteImport } from './routes/_authenticated/borrow-requests'
-import { Route as AuthenticatedBulkUploadRouteImport } from './routes/_authenticated/bulk-upload'
-import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedFutureDevelopmentRouteImport } from './routes/_authenticated/future-development'
-import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated/inventory'
-import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
-import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
-import { Route as AuthenticatedSuppliersRouteImport } from './routes/_authenticated/suppliers'
-import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthResetRouteImport } from './routes/auth_.reset'
-import { Route as AuthenticatedPackingSlipsIndexRouteImport } from './routes/_authenticated/packing-slips.index'
-import { Route as AuthenticatedPackingSlipsIdRouteImport } from './routes/_authenticated/packing-slips.$id'
-import { Route as AuthenticatedPackingSlipsNewRouteImport } from './routes/_authenticated/packing-slips.new'
-import { Route as AuthenticatedProjectsIndexRouteImport } from './routes/_authenticated/projects.index'
-import { Route as AuthenticatedProjectsMkjRouteImport } from './routes/_authenticated/projects.$mkj'
-import { Route as AuthenticatedPurchaseOrdersIndexRouteImport } from './routes/_authenticated/purchase-orders.index'
-import { Route as AuthenticatedPurchaseOrdersIdRouteImport } from './routes/_authenticated/purchase-orders.$id'
-import { Route as AuthenticatedPurchaseOrdersNewRouteImport } from './routes/_authenticated/purchase-orders.new'
+import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
+import { Route as AuthenticatedSuppliersRouteImport } from './routes/_authenticated/suppliers'
+import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
+import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
+import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated/inventory'
+import { Route as AuthenticatedFutureDevelopmentRouteImport } from './routes/_authenticated/future-development'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedBulkUploadRouteImport } from './routes/_authenticated/bulk-upload'
+import { Route as AuthenticatedBorrowRequestsRouteImport } from './routes/_authenticated/borrow-requests'
+import { Route as AuthenticatedAccountSettingsRouteImport } from './routes/_authenticated/account-settings'
 import { Route as AuthenticatedShippingTicketsIndexRouteImport } from './routes/_authenticated/shipping-tickets.index'
-import { Route as AuthenticatedShippingTicketsIdRouteImport } from './routes/_authenticated/shipping-tickets.$id'
+import { Route as AuthenticatedPurchaseOrdersIndexRouteImport } from './routes/_authenticated/purchase-orders.index'
+import { Route as AuthenticatedProjectsIndexRouteImport } from './routes/_authenticated/projects.index'
+import { Route as AuthenticatedPackingSlipsIndexRouteImport } from './routes/_authenticated/packing-slips.index'
+import { Route as AuthenticatedManufacturingIndexRouteImport } from './routes/_authenticated/manufacturing.index'
 import { Route as AuthenticatedShippingTicketsNewRouteImport } from './routes/_authenticated/shipping-tickets.new'
+import { Route as AuthenticatedShippingTicketsIdRouteImport } from './routes/_authenticated/shipping-tickets.$id'
+import { Route as AuthenticatedPurchaseOrdersNewRouteImport } from './routes/_authenticated/purchase-orders.new'
+import { Route as AuthenticatedPurchaseOrdersIdRouteImport } from './routes/_authenticated/purchase-orders.$id'
+import { Route as AuthenticatedProjectsMkjRouteImport } from './routes/_authenticated/projects.$mkj'
+import { Route as AuthenticatedPackingSlipsNewRouteImport } from './routes/_authenticated/packing-slips.new'
+import { Route as AuthenticatedPackingSlipsIdRouteImport } from './routes/_authenticated/packing-slips.$id'
+import { Route as AuthenticatedManufacturingSystemsRouteImport } from './routes/_authenticated/manufacturing.systems'
+import { Route as AuthenticatedManufacturingNewRouteImport } from './routes/_authenticated/manufacturing.new'
+import { Route as AuthenticatedManufacturingIdRouteImport } from './routes/_authenticated/manufacturing.$id'
+import { Route as AuthenticatedManufacturingEditIdRouteImport } from './routes/_authenticated/manufacturing.edit.$id'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedAccountSettingsRoute =
-  AuthenticatedAccountSettingsRouteImport.update({
-    id: '/account-settings',
-    path: '/account-settings',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedBorrowRequestsRoute =
-  AuthenticatedBorrowRequestsRouteImport.update({
-    id: '/borrow-requests',
-    path: '/borrow-requests',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedBulkUploadRoute = AuthenticatedBulkUploadRouteImport.update({
-  id: '/bulk-upload',
-  path: '/bulk-upload',
+const AuthResetRoute = AuthResetRouteImport.update({
+  id: '/auth_/reset',
+  path: '/auth/reset',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
+const AuthenticatedSuppliersRoute = AuthenticatedSuppliersRouteImport.update({
+  id: '/suppliers',
+  path: '/suppliers',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedFutureDevelopmentRoute =
-  AuthenticatedFutureDevelopmentRouteImport.update({
-    id: '/future-development',
-    path: '/future-development',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedInventoryRoute = AuthenticatedInventoryRouteImport.update({
-  id: '/inventory',
-  path: '/inventory',
+const AuthenticatedProductsRoute = AuthenticatedProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedNotificationsRoute =
@@ -88,72 +80,37 @@ const AuthenticatedNotificationsRoute =
     path: '/notifications',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedProductsRoute = AuthenticatedProductsRouteImport.update({
-  id: '/products',
-  path: '/products',
+const AuthenticatedInventoryRoute = AuthenticatedInventoryRouteImport.update({
+  id: '/inventory',
+  path: '/inventory',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedSuppliersRoute = AuthenticatedSuppliersRouteImport.update({
-  id: '/suppliers',
-  path: '/suppliers',
+const AuthenticatedFutureDevelopmentRoute =
+  AuthenticatedFutureDevelopmentRouteImport.update({
+    id: '/future-development',
+    path: '/future-development',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
+const AuthenticatedBulkUploadRoute = AuthenticatedBulkUploadRouteImport.update({
+  id: '/bulk-upload',
+  path: '/bulk-upload',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthResetRoute = AuthResetRouteImport.update({
-  id: '/auth_/reset',
-  path: '/auth/reset',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedPackingSlipsIndexRoute =
-  AuthenticatedPackingSlipsIndexRouteImport.update({
-    id: '/packing-slips/',
-    path: '/packing-slips/',
+const AuthenticatedBorrowRequestsRoute =
+  AuthenticatedBorrowRequestsRouteImport.update({
+    id: '/borrow-requests',
+    path: '/borrow-requests',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedPackingSlipsIdRoute =
-  AuthenticatedPackingSlipsIdRouteImport.update({
-    id: '/packing-slips/$id',
-    path: '/packing-slips/$id',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedPackingSlipsNewRoute =
-  AuthenticatedPackingSlipsNewRouteImport.update({
-    id: '/packing-slips/new',
-    path: '/packing-slips/new',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedProjectsIndexRoute =
-  AuthenticatedProjectsIndexRouteImport.update({
-    id: '/projects/',
-    path: '/projects/',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedProjectsMkjRoute =
-  AuthenticatedProjectsMkjRouteImport.update({
-    id: '/projects/$mkj',
-    path: '/projects/$mkj',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedPurchaseOrdersIndexRoute =
-  AuthenticatedPurchaseOrdersIndexRouteImport.update({
-    id: '/purchase-orders/',
-    path: '/purchase-orders/',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedPurchaseOrdersIdRoute =
-  AuthenticatedPurchaseOrdersIdRouteImport.update({
-    id: '/purchase-orders/$id',
-    path: '/purchase-orders/$id',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedPurchaseOrdersNewRoute =
-  AuthenticatedPurchaseOrdersNewRouteImport.update({
-    id: '/purchase-orders/new',
-    path: '/purchase-orders/new',
+const AuthenticatedAccountSettingsRoute =
+  AuthenticatedAccountSettingsRouteImport.update({
+    id: '/account-settings',
+    path: '/account-settings',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedShippingTicketsIndexRoute =
@@ -162,16 +119,94 @@ const AuthenticatedShippingTicketsIndexRoute =
     path: '/shipping-tickets/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedShippingTicketsIdRoute =
-  AuthenticatedShippingTicketsIdRouteImport.update({
-    id: '/shipping-tickets/$id',
-    path: '/shipping-tickets/$id',
+const AuthenticatedPurchaseOrdersIndexRoute =
+  AuthenticatedPurchaseOrdersIndexRouteImport.update({
+    id: '/purchase-orders/',
+    path: '/purchase-orders/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedProjectsIndexRoute =
+  AuthenticatedProjectsIndexRouteImport.update({
+    id: '/projects/',
+    path: '/projects/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPackingSlipsIndexRoute =
+  AuthenticatedPackingSlipsIndexRouteImport.update({
+    id: '/packing-slips/',
+    path: '/packing-slips/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedManufacturingIndexRoute =
+  AuthenticatedManufacturingIndexRouteImport.update({
+    id: '/manufacturing/',
+    path: '/manufacturing/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedShippingTicketsNewRoute =
   AuthenticatedShippingTicketsNewRouteImport.update({
     id: '/shipping-tickets/new',
     path: '/shipping-tickets/new',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedShippingTicketsIdRoute =
+  AuthenticatedShippingTicketsIdRouteImport.update({
+    id: '/shipping-tickets/$id',
+    path: '/shipping-tickets/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPurchaseOrdersNewRoute =
+  AuthenticatedPurchaseOrdersNewRouteImport.update({
+    id: '/purchase-orders/new',
+    path: '/purchase-orders/new',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPurchaseOrdersIdRoute =
+  AuthenticatedPurchaseOrdersIdRouteImport.update({
+    id: '/purchase-orders/$id',
+    path: '/purchase-orders/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedProjectsMkjRoute =
+  AuthenticatedProjectsMkjRouteImport.update({
+    id: '/projects/$mkj',
+    path: '/projects/$mkj',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPackingSlipsNewRoute =
+  AuthenticatedPackingSlipsNewRouteImport.update({
+    id: '/packing-slips/new',
+    path: '/packing-slips/new',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPackingSlipsIdRoute =
+  AuthenticatedPackingSlipsIdRouteImport.update({
+    id: '/packing-slips/$id',
+    path: '/packing-slips/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedManufacturingSystemsRoute =
+  AuthenticatedManufacturingSystemsRouteImport.update({
+    id: '/manufacturing/systems',
+    path: '/manufacturing/systems',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedManufacturingNewRoute =
+  AuthenticatedManufacturingNewRouteImport.update({
+    id: '/manufacturing/new',
+    path: '/manufacturing/new',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedManufacturingIdRoute =
+  AuthenticatedManufacturingIdRouteImport.update({
+    id: '/manufacturing/$id',
+    path: '/manufacturing/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedManufacturingEditIdRoute =
+  AuthenticatedManufacturingEditIdRouteImport.update({
+    id: '/manufacturing/edit/$id',
+    path: '/manufacturing/edit/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
@@ -189,6 +224,9 @@ export interface FileRoutesByFullPath {
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/users': typeof AuthenticatedUsersRoute
   '/auth/reset': typeof AuthResetRoute
+  '/manufacturing/$id': typeof AuthenticatedManufacturingIdRoute
+  '/manufacturing/new': typeof AuthenticatedManufacturingNewRoute
+  '/manufacturing/systems': typeof AuthenticatedManufacturingSystemsRoute
   '/packing-slips/$id': typeof AuthenticatedPackingSlipsIdRoute
   '/packing-slips/new': typeof AuthenticatedPackingSlipsNewRoute
   '/projects/$mkj': typeof AuthenticatedProjectsMkjRoute
@@ -196,10 +234,12 @@ export interface FileRoutesByFullPath {
   '/purchase-orders/new': typeof AuthenticatedPurchaseOrdersNewRoute
   '/shipping-tickets/$id': typeof AuthenticatedShippingTicketsIdRoute
   '/shipping-tickets/new': typeof AuthenticatedShippingTicketsNewRoute
+  '/manufacturing/': typeof AuthenticatedManufacturingIndexRoute
   '/packing-slips/': typeof AuthenticatedPackingSlipsIndexRoute
   '/projects/': typeof AuthenticatedProjectsIndexRoute
   '/purchase-orders/': typeof AuthenticatedPurchaseOrdersIndexRoute
   '/shipping-tickets/': typeof AuthenticatedShippingTicketsIndexRoute
+  '/manufacturing/edit/$id': typeof AuthenticatedManufacturingEditIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -215,6 +255,9 @@ export interface FileRoutesByTo {
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/users': typeof AuthenticatedUsersRoute
   '/auth/reset': typeof AuthResetRoute
+  '/manufacturing/$id': typeof AuthenticatedManufacturingIdRoute
+  '/manufacturing/new': typeof AuthenticatedManufacturingNewRoute
+  '/manufacturing/systems': typeof AuthenticatedManufacturingSystemsRoute
   '/packing-slips/$id': typeof AuthenticatedPackingSlipsIdRoute
   '/packing-slips/new': typeof AuthenticatedPackingSlipsNewRoute
   '/projects/$mkj': typeof AuthenticatedProjectsMkjRoute
@@ -222,10 +265,12 @@ export interface FileRoutesByTo {
   '/purchase-orders/new': typeof AuthenticatedPurchaseOrdersNewRoute
   '/shipping-tickets/$id': typeof AuthenticatedShippingTicketsIdRoute
   '/shipping-tickets/new': typeof AuthenticatedShippingTicketsNewRoute
+  '/manufacturing': typeof AuthenticatedManufacturingIndexRoute
   '/packing-slips': typeof AuthenticatedPackingSlipsIndexRoute
   '/projects': typeof AuthenticatedProjectsIndexRoute
   '/purchase-orders': typeof AuthenticatedPurchaseOrdersIndexRoute
   '/shipping-tickets': typeof AuthenticatedShippingTicketsIndexRoute
+  '/manufacturing/edit/$id': typeof AuthenticatedManufacturingEditIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -243,6 +288,9 @@ export interface FileRoutesById {
   '/_authenticated/suppliers': typeof AuthenticatedSuppliersRoute
   '/_authenticated/users': typeof AuthenticatedUsersRoute
   '/auth_/reset': typeof AuthResetRoute
+  '/_authenticated/manufacturing/$id': typeof AuthenticatedManufacturingIdRoute
+  '/_authenticated/manufacturing/new': typeof AuthenticatedManufacturingNewRoute
+  '/_authenticated/manufacturing/systems': typeof AuthenticatedManufacturingSystemsRoute
   '/_authenticated/packing-slips/$id': typeof AuthenticatedPackingSlipsIdRoute
   '/_authenticated/packing-slips/new': typeof AuthenticatedPackingSlipsNewRoute
   '/_authenticated/projects/$mkj': typeof AuthenticatedProjectsMkjRoute
@@ -250,10 +298,12 @@ export interface FileRoutesById {
   '/_authenticated/purchase-orders/new': typeof AuthenticatedPurchaseOrdersNewRoute
   '/_authenticated/shipping-tickets/$id': typeof AuthenticatedShippingTicketsIdRoute
   '/_authenticated/shipping-tickets/new': typeof AuthenticatedShippingTicketsNewRoute
+  '/_authenticated/manufacturing/': typeof AuthenticatedManufacturingIndexRoute
   '/_authenticated/packing-slips/': typeof AuthenticatedPackingSlipsIndexRoute
   '/_authenticated/projects/': typeof AuthenticatedProjectsIndexRoute
   '/_authenticated/purchase-orders/': typeof AuthenticatedPurchaseOrdersIndexRoute
   '/_authenticated/shipping-tickets/': typeof AuthenticatedShippingTicketsIndexRoute
+  '/_authenticated/manufacturing/edit/$id': typeof AuthenticatedManufacturingEditIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -271,6 +321,9 @@ export interface FileRouteTypes {
     | '/suppliers'
     | '/users'
     | '/auth/reset'
+    | '/manufacturing/$id'
+    | '/manufacturing/new'
+    | '/manufacturing/systems'
     | '/packing-slips/$id'
     | '/packing-slips/new'
     | '/projects/$mkj'
@@ -278,10 +331,12 @@ export interface FileRouteTypes {
     | '/purchase-orders/new'
     | '/shipping-tickets/$id'
     | '/shipping-tickets/new'
+    | '/manufacturing/'
     | '/packing-slips/'
     | '/projects/'
     | '/purchase-orders/'
     | '/shipping-tickets/'
+    | '/manufacturing/edit/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -297,6 +352,9 @@ export interface FileRouteTypes {
     | '/suppliers'
     | '/users'
     | '/auth/reset'
+    | '/manufacturing/$id'
+    | '/manufacturing/new'
+    | '/manufacturing/systems'
     | '/packing-slips/$id'
     | '/packing-slips/new'
     | '/projects/$mkj'
@@ -304,10 +362,12 @@ export interface FileRouteTypes {
     | '/purchase-orders/new'
     | '/shipping-tickets/$id'
     | '/shipping-tickets/new'
+    | '/manufacturing'
     | '/packing-slips'
     | '/projects'
     | '/purchase-orders'
     | '/shipping-tickets'
+    | '/manufacturing/edit/$id'
   id:
     | '__root__'
     | '/'
@@ -324,6 +384,9 @@ export interface FileRouteTypes {
     | '/_authenticated/suppliers'
     | '/_authenticated/users'
     | '/auth_/reset'
+    | '/_authenticated/manufacturing/$id'
+    | '/_authenticated/manufacturing/new'
+    | '/_authenticated/manufacturing/systems'
     | '/_authenticated/packing-slips/$id'
     | '/_authenticated/packing-slips/new'
     | '/_authenticated/projects/$mkj'
@@ -331,10 +394,12 @@ export interface FileRouteTypes {
     | '/_authenticated/purchase-orders/new'
     | '/_authenticated/shipping-tickets/$id'
     | '/_authenticated/shipping-tickets/new'
+    | '/_authenticated/manufacturing/'
     | '/_authenticated/packing-slips/'
     | '/_authenticated/projects/'
     | '/_authenticated/purchase-orders/'
     | '/_authenticated/shipping-tickets/'
+    | '/_authenticated/manufacturing/edit/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -346,11 +411,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -360,67 +425,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/account-settings': {
-      id: '/_authenticated/account-settings'
-      path: '/account-settings'
-      fullPath: '/account-settings'
-      preLoaderRoute: typeof AuthenticatedAccountSettingsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/auth_/reset': {
+      id: '/auth_/reset'
+      path: '/auth/reset'
+      fullPath: '/auth/reset'
+      preLoaderRoute: typeof AuthResetRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/borrow-requests': {
-      id: '/_authenticated/borrow-requests'
-      path: '/borrow-requests'
-      fullPath: '/borrow-requests'
-      preLoaderRoute: typeof AuthenticatedBorrowRequestsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/bulk-upload': {
-      id: '/_authenticated/bulk-upload'
-      path: '/bulk-upload'
-      fullPath: '/bulk-upload'
-      preLoaderRoute: typeof AuthenticatedBulkUploadRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/dashboard': {
-      id: '/_authenticated/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/future-development': {
-      id: '/_authenticated/future-development'
-      path: '/future-development'
-      fullPath: '/future-development'
-      preLoaderRoute: typeof AuthenticatedFutureDevelopmentRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/inventory': {
-      id: '/_authenticated/inventory'
-      path: '/inventory'
-      fullPath: '/inventory'
-      preLoaderRoute: typeof AuthenticatedInventoryRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/notifications': {
-      id: '/_authenticated/notifications'
-      path: '/notifications'
-      fullPath: '/notifications'
-      preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/products': {
-      id: '/_authenticated/products'
-      path: '/products'
-      fullPath: '/products'
-      preLoaderRoute: typeof AuthenticatedProductsRouteImport
+    '/_authenticated/users': {
+      id: '/_authenticated/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof AuthenticatedUsersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/suppliers': {
@@ -430,74 +453,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSuppliersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/users': {
-      id: '/_authenticated/users'
-      path: '/users'
-      fullPath: '/users'
-      preLoaderRoute: typeof AuthenticatedUsersRouteImport
+    '/_authenticated/products': {
+      id: '/_authenticated/products'
+      path: '/products'
+      fullPath: '/products'
+      preLoaderRoute: typeof AuthenticatedProductsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/auth_/reset': {
-      id: '/auth_/reset'
-      path: '/auth/reset'
-      fullPath: '/auth/reset'
-      preLoaderRoute: typeof AuthResetRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/packing-slips/': {
-      id: '/_authenticated/packing-slips/'
-      path: '/packing-slips'
-      fullPath: '/packing-slips/'
-      preLoaderRoute: typeof AuthenticatedPackingSlipsIndexRouteImport
+    '/_authenticated/notifications': {
+      id: '/_authenticated/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/packing-slips/$id': {
-      id: '/_authenticated/packing-slips/$id'
-      path: '/packing-slips/$id'
-      fullPath: '/packing-slips/$id'
-      preLoaderRoute: typeof AuthenticatedPackingSlipsIdRouteImport
+    '/_authenticated/inventory': {
+      id: '/_authenticated/inventory'
+      path: '/inventory'
+      fullPath: '/inventory'
+      preLoaderRoute: typeof AuthenticatedInventoryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/packing-slips/new': {
-      id: '/_authenticated/packing-slips/new'
-      path: '/packing-slips/new'
-      fullPath: '/packing-slips/new'
-      preLoaderRoute: typeof AuthenticatedPackingSlipsNewRouteImport
+    '/_authenticated/future-development': {
+      id: '/_authenticated/future-development'
+      path: '/future-development'
+      fullPath: '/future-development'
+      preLoaderRoute: typeof AuthenticatedFutureDevelopmentRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/projects/': {
-      id: '/_authenticated/projects/'
-      path: '/projects'
-      fullPath: '/projects/'
-      preLoaderRoute: typeof AuthenticatedProjectsIndexRouteImport
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/projects/$mkj': {
-      id: '/_authenticated/projects/$mkj'
-      path: '/projects/$mkj'
-      fullPath: '/projects/$mkj'
-      preLoaderRoute: typeof AuthenticatedProjectsMkjRouteImport
+    '/_authenticated/bulk-upload': {
+      id: '/_authenticated/bulk-upload'
+      path: '/bulk-upload'
+      fullPath: '/bulk-upload'
+      preLoaderRoute: typeof AuthenticatedBulkUploadRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/purchase-orders/': {
-      id: '/_authenticated/purchase-orders/'
-      path: '/purchase-orders'
-      fullPath: '/purchase-orders/'
-      preLoaderRoute: typeof AuthenticatedPurchaseOrdersIndexRouteImport
+    '/_authenticated/borrow-requests': {
+      id: '/_authenticated/borrow-requests'
+      path: '/borrow-requests'
+      fullPath: '/borrow-requests'
+      preLoaderRoute: typeof AuthenticatedBorrowRequestsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/purchase-orders/$id': {
-      id: '/_authenticated/purchase-orders/$id'
-      path: '/purchase-orders/$id'
-      fullPath: '/purchase-orders/$id'
-      preLoaderRoute: typeof AuthenticatedPurchaseOrdersIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/purchase-orders/new': {
-      id: '/_authenticated/purchase-orders/new'
-      path: '/purchase-orders/new'
-      fullPath: '/purchase-orders/new'
-      preLoaderRoute: typeof AuthenticatedPurchaseOrdersNewRouteImport
+    '/_authenticated/account-settings': {
+      id: '/_authenticated/account-settings'
+      path: '/account-settings'
+      fullPath: '/account-settings'
+      preLoaderRoute: typeof AuthenticatedAccountSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/shipping-tickets/': {
@@ -507,11 +516,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedShippingTicketsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/shipping-tickets/$id': {
-      id: '/_authenticated/shipping-tickets/$id'
-      path: '/shipping-tickets/$id'
-      fullPath: '/shipping-tickets/$id'
-      preLoaderRoute: typeof AuthenticatedShippingTicketsIdRouteImport
+    '/_authenticated/purchase-orders/': {
+      id: '/_authenticated/purchase-orders/'
+      path: '/purchase-orders'
+      fullPath: '/purchase-orders/'
+      preLoaderRoute: typeof AuthenticatedPurchaseOrdersIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/projects/': {
+      id: '/_authenticated/projects/'
+      path: '/projects'
+      fullPath: '/projects/'
+      preLoaderRoute: typeof AuthenticatedProjectsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/packing-slips/': {
+      id: '/_authenticated/packing-slips/'
+      path: '/packing-slips'
+      fullPath: '/packing-slips/'
+      preLoaderRoute: typeof AuthenticatedPackingSlipsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/manufacturing/': {
+      id: '/_authenticated/manufacturing/'
+      path: '/manufacturing'
+      fullPath: '/manufacturing/'
+      preLoaderRoute: typeof AuthenticatedManufacturingIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/shipping-tickets/new': {
@@ -519,6 +549,76 @@ declare module '@tanstack/react-router' {
       path: '/shipping-tickets/new'
       fullPath: '/shipping-tickets/new'
       preLoaderRoute: typeof AuthenticatedShippingTicketsNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/shipping-tickets/$id': {
+      id: '/_authenticated/shipping-tickets/$id'
+      path: '/shipping-tickets/$id'
+      fullPath: '/shipping-tickets/$id'
+      preLoaderRoute: typeof AuthenticatedShippingTicketsIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/purchase-orders/new': {
+      id: '/_authenticated/purchase-orders/new'
+      path: '/purchase-orders/new'
+      fullPath: '/purchase-orders/new'
+      preLoaderRoute: typeof AuthenticatedPurchaseOrdersNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/purchase-orders/$id': {
+      id: '/_authenticated/purchase-orders/$id'
+      path: '/purchase-orders/$id'
+      fullPath: '/purchase-orders/$id'
+      preLoaderRoute: typeof AuthenticatedPurchaseOrdersIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/projects/$mkj': {
+      id: '/_authenticated/projects/$mkj'
+      path: '/projects/$mkj'
+      fullPath: '/projects/$mkj'
+      preLoaderRoute: typeof AuthenticatedProjectsMkjRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/packing-slips/new': {
+      id: '/_authenticated/packing-slips/new'
+      path: '/packing-slips/new'
+      fullPath: '/packing-slips/new'
+      preLoaderRoute: typeof AuthenticatedPackingSlipsNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/packing-slips/$id': {
+      id: '/_authenticated/packing-slips/$id'
+      path: '/packing-slips/$id'
+      fullPath: '/packing-slips/$id'
+      preLoaderRoute: typeof AuthenticatedPackingSlipsIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/manufacturing/systems': {
+      id: '/_authenticated/manufacturing/systems'
+      path: '/manufacturing/systems'
+      fullPath: '/manufacturing/systems'
+      preLoaderRoute: typeof AuthenticatedManufacturingSystemsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/manufacturing/new': {
+      id: '/_authenticated/manufacturing/new'
+      path: '/manufacturing/new'
+      fullPath: '/manufacturing/new'
+      preLoaderRoute: typeof AuthenticatedManufacturingNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/manufacturing/$id': {
+      id: '/_authenticated/manufacturing/$id'
+      path: '/manufacturing/$id'
+      fullPath: '/manufacturing/$id'
+      preLoaderRoute: typeof AuthenticatedManufacturingIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/manufacturing/edit/$id': {
+      id: '/_authenticated/manufacturing/edit/$id'
+      path: '/manufacturing/edit/$id'
+      fullPath: '/manufacturing/edit/$id'
+      preLoaderRoute: typeof AuthenticatedManufacturingEditIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
   }
@@ -535,6 +635,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProductsRoute: typeof AuthenticatedProductsRoute
   AuthenticatedSuppliersRoute: typeof AuthenticatedSuppliersRoute
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
+  AuthenticatedManufacturingIdRoute: typeof AuthenticatedManufacturingIdRoute
+  AuthenticatedManufacturingNewRoute: typeof AuthenticatedManufacturingNewRoute
+  AuthenticatedManufacturingSystemsRoute: typeof AuthenticatedManufacturingSystemsRoute
   AuthenticatedPackingSlipsIdRoute: typeof AuthenticatedPackingSlipsIdRoute
   AuthenticatedPackingSlipsNewRoute: typeof AuthenticatedPackingSlipsNewRoute
   AuthenticatedProjectsMkjRoute: typeof AuthenticatedProjectsMkjRoute
@@ -542,10 +645,12 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPurchaseOrdersNewRoute: typeof AuthenticatedPurchaseOrdersNewRoute
   AuthenticatedShippingTicketsIdRoute: typeof AuthenticatedShippingTicketsIdRoute
   AuthenticatedShippingTicketsNewRoute: typeof AuthenticatedShippingTicketsNewRoute
+  AuthenticatedManufacturingIndexRoute: typeof AuthenticatedManufacturingIndexRoute
   AuthenticatedPackingSlipsIndexRoute: typeof AuthenticatedPackingSlipsIndexRoute
   AuthenticatedProjectsIndexRoute: typeof AuthenticatedProjectsIndexRoute
   AuthenticatedPurchaseOrdersIndexRoute: typeof AuthenticatedPurchaseOrdersIndexRoute
   AuthenticatedShippingTicketsIndexRoute: typeof AuthenticatedShippingTicketsIndexRoute
+  AuthenticatedManufacturingEditIdRoute: typeof AuthenticatedManufacturingEditIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -559,6 +664,10 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProductsRoute: AuthenticatedProductsRoute,
   AuthenticatedSuppliersRoute: AuthenticatedSuppliersRoute,
   AuthenticatedUsersRoute: AuthenticatedUsersRoute,
+  AuthenticatedManufacturingIdRoute: AuthenticatedManufacturingIdRoute,
+  AuthenticatedManufacturingNewRoute: AuthenticatedManufacturingNewRoute,
+  AuthenticatedManufacturingSystemsRoute:
+    AuthenticatedManufacturingSystemsRoute,
   AuthenticatedPackingSlipsIdRoute: AuthenticatedPackingSlipsIdRoute,
   AuthenticatedPackingSlipsNewRoute: AuthenticatedPackingSlipsNewRoute,
   AuthenticatedProjectsMkjRoute: AuthenticatedProjectsMkjRoute,
@@ -566,11 +675,13 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPurchaseOrdersNewRoute: AuthenticatedPurchaseOrdersNewRoute,
   AuthenticatedShippingTicketsIdRoute: AuthenticatedShippingTicketsIdRoute,
   AuthenticatedShippingTicketsNewRoute: AuthenticatedShippingTicketsNewRoute,
+  AuthenticatedManufacturingIndexRoute: AuthenticatedManufacturingIndexRoute,
   AuthenticatedPackingSlipsIndexRoute: AuthenticatedPackingSlipsIndexRoute,
   AuthenticatedProjectsIndexRoute: AuthenticatedProjectsIndexRoute,
   AuthenticatedPurchaseOrdersIndexRoute: AuthenticatedPurchaseOrdersIndexRoute,
   AuthenticatedShippingTicketsIndexRoute:
     AuthenticatedShippingTicketsIndexRoute,
+  AuthenticatedManufacturingEditIdRoute: AuthenticatedManufacturingEditIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
