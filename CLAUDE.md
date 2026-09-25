@@ -154,6 +154,13 @@ Managers ask the shop to build standard systems (CCTV cabinets, data cabinets, a
 
 ---
 
+# Deployment
+
+- Code lives in `MKJ-Communications/MKJ-App`. Vercel (free plan, which can't connect to an organization's repo) deploys from a personal mirror instead: [.github/workflows/mirror-to-vercel.yml](.github/workflows/mirror-to-vercel.yml) force-pushes every branch there. `main` goes live; other branches get preview deployments. Never commit to the mirror directly.
+- On the free plan Vercel only deploys a private repo's commits authored by the account owner (Cesar), so a push whose latest commit is someone else's won't deploy.
+
+---
+
 # Pending Decisions
 
 - **Email confirmation on sign-up**: Supabase's "Confirm email" toggle (Dashboard → Authentication → Providers → Email) is active, and `signUp` in [src/routes/auth.tsx](src/routes/auth.tsx) assumes confirmation is required (shows a "check your email" toast). Staying that way. All five auth emails (confirm signup, reset password, magic link, invite, email change) are branded and generated from one layout — see [supabase/templates/README.md](supabase/templates/README.md).

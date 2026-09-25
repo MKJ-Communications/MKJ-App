@@ -1,0 +1,52 @@
+# Copies every branch push to the personal repo that Vercel deploys from.
+#
+# Vercel's free plan can't connect to a repo owned by a GitHub organization, so
+# this repo stays the only source of truth and the mirror is force-pushed to
+# match it: never commit to the mirror directly, the next push overwrites it.
+# Pushes to main go live on Vercel; other branches get preview deployments.
+#
+# Needs, in this repo's Settings -> Secrets and variables -> Actions:
+#   secret    MIRROR_SSH_KEY   private half of a deploy key that has write
+#                              access on the mirror (and nothing else)
+#   variable  MIRROR_REPO      the mirror as owner/name
+name: Mirror to Vercel repo
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+# A newer push to the same branch supersedes one still being mirrored.
+concurrency:
+  group: mirror-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history: the mirror has to accept the push as-is.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Push to mirror
+        env:
+          SSH_KEY: ${{ secrets.MIRROR_SSH_KEY }}
+          MIRROR_REPO: ${{ vars.MIRROR_REPO }}
+        run: |
+          if [ -z "$SSH_KEY" ] || [ -z "$MIRROR_REPO" ]; then
+            echo "::error::Set the MIRROR_SSH_KEY secret and the MIRROR_REPO variable first."
+            exit 1
+          fi
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/mirror_key
+          chmod 600 ~/.ssh/mirror_key
+          # GitHub's published ed25519 host key, pinned rather than fetched with ssh-keyscan.
+          echo "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl" > ~/.ssh/known_hosts
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/mirror_key -o IdentitiesOnly=yes"
+          git push --force "git@github.com:${MIRROR_REPO}.git" "HEAD:refs/heads/${GITHUB_REF_NAME}"
