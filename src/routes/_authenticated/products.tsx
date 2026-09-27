@@ -22,6 +22,7 @@ import { useSerialSupport } from "@/lib/serials";
 type Product = {
   id: string; part_number: string; description: string; unit: string; reorder_point: number;
   is_serialized?: boolean | null;
+  manufacturer: string | null;
 };
 
 // Row shape of v_products_with_cost: products plus the one cost to show,
@@ -53,6 +54,7 @@ function ProductsPage() {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [pn, setPn] = useState("");
+  const [mfr, setMfr] = useState("");
   const [desc, setDesc] = useState("");
   const [unit, setUnit] = useState("ea");
   const [rp, setRp] = useState<number>(0);
@@ -60,6 +62,8 @@ function ProductsPage() {
   // Serial tracking only shows once the backend schema is in place.
   const serialsOn = useSerialSupport().data === true;
   const [pricesFor, setPricesFor] = useState<ProductWithCost | null>(null);
+  // "" = all manufacturers, "__none__" = products with none set.
+  const [mfrFilter, setMfrFilter] = useState("");
 
   // Optional "set a price while creating the part" section on the New
   // Product dialog. Left blank, product creation behaves exactly as before --
@@ -95,15 +99,23 @@ function ProductsPage() {
     queryFn: async () => (await supabase.from("suppliers").select("id, name").order("name")).data ?? [],
   });
 
+  // Manufacturers already in use: the filter's options, and the suggestions
+  // on the New/Edit dialogs so the same maker isn't spelled three ways.
+  const manufacturers = useMemo(
+    () => [...new Set((products.data ?? []).map((p) => p.manufacturer).filter((m): m is string => !!m))].sort((a, b) => a.localeCompare(b)),
+    [products.data],
+  );
+
   const term = q.trim().toLowerCase();
   const filtered = useMemo(() => {
     if (!products.data) return [];
-    if (!term) return products.data;
     return products.data.filter((p) => {
-      const hay = [p.part_number, p.description].filter(Boolean).join(" ").toLowerCase();
+      if (mfrFilter === "__none__" ? p.manufacturer : mfrFilter && p.manufacturer !== mfrFilter) return false;
+      if (!term) return true;
+      const hay = [p.part_number, p.manufacturer, p.description].filter(Boolean).join(" ").toLowerCase();
       return hay.includes(term);
     });
-  }, [products.data, term]);
+  }, [products.data, term, mfrFilter]);
 
   const priceFieldsFilled =
     priceCost.trim() !== "" && (priceSupplierId === "__other__" ? !!priceSourceLabel.trim() : !!priceSupplierId);
@@ -114,6 +126,7 @@ function ProductsPage() {
         .from("products")
         .insert({
           part_number: pn.trim(),
+          manufacturer: mfr.trim() || null,
           description: desc.trim(),
           unit: unit.trim() || "ea",
           reorder_point: rp,
@@ -147,7 +160,7 @@ function ProductsPage() {
       toast.success("Product added");
       if (priceWarning) toast.warning(`Price wasn't saved (${priceWarning}) — add it from the $ button on this part.`);
       setOpen(false);
-      setPn(""); setDesc(""); setUnit("ea"); setRp(0); setSerialized(false);
+      setPn(""); setMfr(""); setDesc(""); setUnit("ea"); setRp(0); setSerialized(false);
       resetPriceFields();
       qc.invalidateQueries({ queryKey: ["products-with-cost"] });
     },
@@ -156,6 +169,7 @@ function ProductsPage() {
 
   const [editing, setEditing] = useState<Product | null>(null);
   const [ePn, setEPn] = useState("");
+  const [eMfr, setEMfr] = useState("");
   const [eDesc, setEDesc] = useState("");
   const [eUnit, setEUnit] = useState("ea");
   const [eRp, setERp] = useState<number>(0);
@@ -164,6 +178,7 @@ function ProductsPage() {
   function openEdit(p: Product) {
     setEditing(p);
     setEPn(p.part_number);
+    setEMfr(p.manufacturer ?? "");
     setEDesc(p.description);
     setEUnit(p.unit);
     setERp(p.reorder_point);
@@ -176,7 +191,7 @@ function ProductsPage() {
       const { error } = await supabase
         .from("products")
         .update({
-          part_number: ePn.trim(), description: eDesc.trim(), unit: eUnit.trim() || "ea", reorder_point: eRp,
+          part_number: ePn.trim(), manufacturer: eMfr.trim() || null, description: eDesc.trim(), unit: eUnit.trim() || "ea", reorder_point: eRp,
           ...(serialsOn ? { is_serialized: eSerialized } : {}),
         } as never)
         .eq("id", editing.id);
@@ -202,6 +217,7 @@ function ProductsPage() {
               <DialogHeader><DialogTitle>New product</DialogTitle></DialogHeader>
               <div className="space-y-3">
                 <div><Label htmlFor="pn">Part number</Label><Input id="pn" value={pn} onChange={(e) => setPn(e.target.value)} placeholder="WV-S35302-F2L" /></div>
+                <div><Label htmlFor="pmfr">Manufacturer</Label><Input id="pmfr" list="manufacturer-options" value={mfr} onChange={(e) => setMfr(e.target.value)} placeholder="i-PRO (optional)" /></div>
                 <div><Label htmlFor="pdesc">Description</Label><Input id="pdesc" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="2MP OUTDOOR VANDAL DOME CAM" /></div>
                 <div className="grid grid-cols-2 gap-3">
                   <div><Label htmlFor="unit">Unit</Label><Input id="unit" value={unit} onChange={(e) => setUnit(e.target.value)} /></div>
@@ -257,20 +273,33 @@ function ProductsPage() {
         ) : null}
       />
 
-      <div className="relative mb-4">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search part # or description…"
-          className="pl-9"
-        />
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row">
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search part #, manufacturer or description…"
+            className="pl-9"
+          />
+        </div>
+        <Select value={mfrFilter || "__all__"} onValueChange={(v) => setMfrFilter(v === "__all__" ? "" : v)}>
+          <SelectTrigger className="sm:w-56" aria-label="Filter by manufacturer"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">All manufacturers</SelectItem>
+            {manufacturers.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+            <SelectItem value="__none__">No manufacturer</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
+      <datalist id="manufacturer-options">
+        {manufacturers.map((m) => <option key={m} value={m} />)}
+      </datalist>
 
       <Card><CardContent className="p-0">
         <Table>
           <TableHeader><TableRow>
-            <TableHead>Part #</TableHead><TableHead>Description</TableHead><TableHead>Unit</TableHead>{serialsOn ? <TableHead>Serials</TableHead> : null}<TableHead className="text-right">Reorder point</TableHead>
+            <TableHead>Part #</TableHead><TableHead>Manufacturer</TableHead><TableHead>Description</TableHead><TableHead>Unit</TableHead>{serialsOn ? <TableHead>Serials</TableHead> : null}<TableHead className="text-right">Reorder point</TableHead>
             {canSeeCost ? <><TableHead className="text-right">Cost</TableHead><TableHead>Updated</TableHead></> : null}
             <TableHead />
           </TableRow></TableHeader>
@@ -278,6 +307,7 @@ function ProductsPage() {
             {filtered.length > 0 ? filtered.map((p) => (
               <TableRow key={p.id}>
                 <TableCell className="font-mono">{p.part_number}</TableCell>
+                <TableCell>{p.manufacturer ?? <span className="text-xs text-muted-foreground">—</span>}</TableCell>
                 <TableCell>{p.description}</TableCell>
                 <TableCell>{p.unit}</TableCell>
                 {serialsOn ? (
@@ -316,7 +346,7 @@ function ProductsPage() {
                   </div>
                 </TableCell>
               </TableRow>
-            )) : <TableRow><TableCell colSpan={serialsOn ? (canSeeCost ? 8 : 6) : (canSeeCost ? 7 : 5)} className="py-6 text-center text-sm text-muted-foreground">{term ? "No matches." : "No products yet."}</TableCell></TableRow>}
+            )) : <TableRow><TableCell colSpan={serialsOn ? (canSeeCost ? 9 : 7) : (canSeeCost ? 8 : 6)} className="py-6 text-center text-sm text-muted-foreground">{term || mfrFilter ? "No matches." : "No products yet."}</TableCell></TableRow>}
           </TableBody>
         </Table>
       </CardContent></Card>
@@ -326,6 +356,7 @@ function ProductsPage() {
           <DialogHeader><DialogTitle>Edit product</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div><Label htmlFor="e-pn">Part number</Label><Input id="e-pn" value={ePn} onChange={(e) => setEPn(e.target.value)} /></div>
+            <div><Label htmlFor="e-pmfr">Manufacturer</Label><Input id="e-pmfr" list="manufacturer-options" value={eMfr} onChange={(e) => setEMfr(e.target.value)} placeholder="Optional" /></div>
             <div><Label htmlFor="e-pdesc">Description</Label><Input id="e-pdesc" value={eDesc} onChange={(e) => setEDesc(e.target.value)} /></div>
             <div className="grid grid-cols-2 gap-3">
               <div><Label htmlFor="e-unit">Unit</Label><Input id="e-unit" value={eUnit} onChange={(e) => setEUnit(e.target.value)} /></div>

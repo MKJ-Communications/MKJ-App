@@ -154,6 +154,17 @@ Managers ask the shop to build standard systems (CCTV cabinets, data cabinets, a
 
 ---
 
+# Cutsheets (SharePoint)
+
+Vendor cutsheets stay in SharePoint (`mkjcommunications.sharepoint.com`, library `Wiki`, folder `Vendor Docs, Cuts & CAD Blocks/Vendor Product Cutsheets & Docs`, subfolders are usually vendors); the app indexes them and never stores copies. Agreed plan (2026-09-26), in stages:
+
+1. **Index** — done: the `sharepoint-cutsheets` edge function (`action: "sync"`, admins only) lists the folder as the "MKJ App – SharePoint reader" Entra app — client credentials, `Sites.Selected` with read on the root site only — and hands the whole listing to `record_sharepoint_sync` (`sharepoint_files`, `cutsheet_sync_runs`; migration `20260926232554_sharepoint_cutsheets`). Files are keyed by SharePoint drive + item id, which survives renames and moves; files that disappear get `removed_at`, never deleted. One-time Microsoft setup: [supabase/functions/sharepoint-cutsheets/README.md](supabase/functions/sharepoint-cutsheets/README.md). Admin page: `/cutsheets`.
+2. **Create products from the files** — next, after looking at the real file names: derive a part number from each name, show a preview on `/cutsheets` to edit/exclude, import all or nothing. Several files with the same part number become one product with several documents; an existing part number gets linked instead of duplicated. `products.manufacturer` (added for this, filled from the vendor folder) is a free-text column.
+3. **Open cutsheets** from the Products list, streamed through the function so no SharePoint login is needed. Only Microsoft users from MKJ's tenant (check the identity's tenant against `MS_TENANT_ID`) who have a role, and admins.
+4. **Keep in sync**: nightly run via `pg_cron` + `pg_net`, auto-link new files to existing products, list unmatched new files for import, manual link/unlink.
+
+---
+
 # Deployment
 
 - Code lives in `MKJ-Communications/MKJ-App`. Vercel (free plan, which can't connect to an organization's repo) deploys from a personal mirror instead: [.github/workflows/mirror-to-vercel.yml](.github/workflows/mirror-to-vercel.yml) force-pushes every branch there. `main` goes live; other branches get preview deployments. Never commit to the mirror directly.

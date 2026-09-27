@@ -6,6 +6,9 @@ verify_jwt = true
 [functions.shipping-ticket-pdf]
 verify_jwt = true
 
+[functions.sharepoint-cutsheets]
+verify_jwt = true
+
 # Branded auth emails. Generated HTML lives in supabase/templates/ (built from
 # _layout.html by build.mjs). This block is what `supabase start` uses locally;
 # the live project is updated with

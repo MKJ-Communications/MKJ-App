@@ -520,6 +520,51 @@ export type Database = {
           },
         ]
       }
+      cutsheet_sync_runs: {
+        Row: {
+          error: string | null
+          files_added: number | null
+          files_changed: number | null
+          files_removed: number | null
+          files_seen: number | null
+          finished_at: string | null
+          folders_scanned: number | null
+          id: string
+          started_at: string
+          status: string
+          trigger: string
+          triggered_by: string | null
+        }
+        Insert: {
+          error?: string | null
+          files_added?: number | null
+          files_changed?: number | null
+          files_removed?: number | null
+          files_seen?: number | null
+          finished_at?: string | null
+          folders_scanned?: number | null
+          id?: string
+          started_at?: string
+          status?: string
+          trigger: string
+          triggered_by?: string | null
+        }
+        Update: {
+          error?: string | null
+          files_added?: number | null
+          files_changed?: number | null
+          files_removed?: number | null
+          files_seen?: number | null
+          finished_at?: string | null
+          folders_scanned?: number | null
+          id?: string
+          started_at?: string
+          status?: string
+          trigger?: string
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
       inventory_adjustments: {
         Row: {
           created_at: string
@@ -932,6 +977,7 @@ export type Database = {
           description: string
           id: string
           is_serialized: boolean
+          manufacturer: string | null
           part_number: string
           reorder_point: number
           unit: string
@@ -942,6 +988,7 @@ export type Database = {
           description: string
           id?: string
           is_serialized?: boolean
+          manufacturer?: string | null
           part_number: string
           reorder_point?: number
           unit?: string
@@ -952,6 +999,7 @@ export type Database = {
           description?: string
           id?: string
           is_serialized?: boolean
+          manufacturer?: string | null
           part_number?: string
           reorder_point?: number
           unit?: string
@@ -1270,6 +1318,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sharepoint_files: {
+        Row: {
+          drive_id: string
+          etag: string | null
+          extension: string | null
+          first_seen_at: string
+          folder_path: string
+          id: string
+          item_id: string
+          last_seen_at: string
+          mime_type: string | null
+          name: string
+          removed_at: string | null
+          size_bytes: number | null
+          sp_modified_at: string | null
+          web_url: string
+        }
+        Insert: {
+          drive_id: string
+          etag?: string | null
+          extension?: string | null
+          first_seen_at?: string
+          folder_path?: string
+          id?: string
+          item_id: string
+          last_seen_at?: string
+          mime_type?: string | null
+          name: string
+          removed_at?: string | null
+          size_bytes?: number | null
+          sp_modified_at?: string | null
+          web_url: string
+        }
+        Update: {
+          drive_id?: string
+          etag?: string | null
+          extension?: string | null
+          first_seen_at?: string
+          folder_path?: string
+          id?: string
+          item_id?: string
+          last_seen_at?: string
+          mime_type?: string | null
+          name?: string
+          removed_at?: string | null
+          size_bytes?: number | null
+          sp_modified_at?: string | null
+          web_url?: string
+        }
+        Relationships: []
       }
       shipping_ticket_item_serials: {
         Row: {
@@ -1832,6 +1931,7 @@ export type Database = {
           description: string | null
           id: string | null
           is_serialized: boolean | null
+          manufacturer: string | null
           max_cost: number | null
           min_cost: number | null
           part_number: string | null
@@ -2305,6 +2405,10 @@ export type Database = {
         Args: { _ticket_id: string }
         Returns: undefined
       }
+      fail_cutsheet_sync: {
+        Args: { _error: string; _run_id: string }
+        Returns: undefined
+      }
       gen_ticket_number: { Args: never; Returns: string }
       has_any_role: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
@@ -2445,6 +2549,15 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      record_sharepoint_sync: {
+        Args: {
+          _drive_id: string
+          _files: Json
+          _folders_scanned: number
+          _run_id: string
+        }
+        Returns: Json
+      }
       refresh_po_status: { Args: { _po_id: string }; Returns: undefined }
       reject_build_request: {
         Args: { _note: string; _request_id: string }
@@ -2562,6 +2675,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      start_cutsheet_sync: {
+        Args: { _trigger: string; _triggered_by: string }
+        Returns: string
       }
       submit_build_request: { Args: { _request_id: string }; Returns: Json }
       sync_packing_slip_inventory: {

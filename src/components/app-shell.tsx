@@ -19,6 +19,7 @@ import {
   Settings,
   KeyRound,
   Rocket,
+  FileText,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import mkjLogo from "@/assets/mkj-logo-navy.png";
@@ -54,6 +55,7 @@ const NAV: NavItem[] = [
   // Build requests; Systems (templates) is one click away from there.
   { to: "/manufacturing", label: "Manufacturing", icon: Factory },
   { to: "/products", label: "Products", icon: Package, warehouseOnly: true },
+  { to: "/cutsheets", label: "Cutsheets", icon: FileText, adminOnly: true },
   { to: "/suppliers", label: "Suppliers", icon: Building2, warehouseOnly: true },
   { to: "/users", label: "Users & Roles", icon: Users, adminOnly: true },
   { to: "/bulk-upload", label: "Bulk Upload", icon: Upload, adminOnly: true },

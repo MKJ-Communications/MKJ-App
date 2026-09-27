@@ -72,6 +72,7 @@ prices file.
 | `unit` | no | How you *stock* it: `ea`, `box`, `ft`, `case`. Defaults to `ea`. |
 | `reorder_point` | no | Whole number. Defaults to `0`. |
 | `is_serialized` | no | `TRUE` if each unit has a serial number to track. Defaults to `FALSE`. |
+| `manufacturer` | no | Who makes the part (`Axis`, `i-PRO`, `Etherwan`). Use one spelling per maker: the Products page filters on it. |
 
 Only list parts that aren't already in the app's Products page.
 
