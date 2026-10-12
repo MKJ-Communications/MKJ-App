@@ -26,6 +26,10 @@ permissions:
 
 jobs:
   mirror:
+    # This file is mirrored too. Without this guard it runs again inside the
+    # mirror on every push, where the secret and variable don't exist, and
+    # fails there.
+    if: github.repository == 'MKJ-Communications/MKJ-App'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
