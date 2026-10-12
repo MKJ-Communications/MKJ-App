@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/page-header";
 
@@ -15,19 +15,32 @@ import { toast } from "sonner";
 import { ArrowLeft, FileText, Plus, Trash } from "lucide-react";
 import { previewDraftPurchaseOrderPdf } from "@/lib/po-pdf";
 import { AssigneeSelect } from "@/components/assignee-select";
-import { useRoles } from "@/hooks/use-session";
+import { useRoles, useSession } from "@/hooks/use-session";
 import { isWarehouseOrAdmin } from "@/lib/roles";
+import { lineLabel, usePoRequest } from "@/lib/po-requests";
 
 export const Route = createFileRoute("/_authenticated/purchase-orders/new")({
   head: () => ({ meta: [{ title: "New Purchase Order — MKJ Ops" }] }),
+  // ?request=<id>: "Create PO" on a pending PO request — the form starts
+  // from its project and lines, and creating the PO completes the request.
+  validateSearch: (s: Record<string, unknown>): { request?: string } => ({
+    request: typeof s.request === "string" ? s.request : undefined,
+  }),
   component: NewPO,
 });
 
-type Line = { line_no: number; budget_code: string; description: string; qty: number; unit: string; unit_cost: number };
+// product_id is only set on lines that came from a request's catalog items,
+// so receiving puts the stock on that product instead of matching by text.
+type Line = { line_no: number; budget_code: string; description: string; qty: number; unit: string; unit_cost: number; product_id: string | null };
 
 function NewPO() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
+  const { userId } = useSession();
   const roles = useRoles();
+  const { request: requestId } = Route.useSearch();
+  const request = usePoRequest(requestId);
+  const fromRequest = requestId ? request.data ?? null : null;
   const projects = useQuery({ queryKey: ["projects", "active"], queryFn: async () => (await supabase.from("projects").select("id, mkj_number, name, description").eq("status", "active").order("mkj_number")).data ?? [] });
   const suppliers = useQuery({ queryKey: ["suppliers"], queryFn: async () => (await supabase.from("suppliers").select("id, name, address, phone").order("name")).data ?? [] });
 
@@ -43,15 +56,53 @@ function NewPO() {
   const [description, setDescription] = useState("");
   const [additionalFreight, setAdditionalFreight] = useState(0);
   const [termsConditions, setTermsConditions] = useState("");
-  const [lines, setLines] = useState<Line[]>([{ line_no: 1, budget_code: "", description: "", qty: 1, unit: "ea", unit_cost: 0 }]);
+  const [lines, setLines] = useState<Line[]>([{ line_no: 1, budget_code: "", description: "", qty: 1, unit: "ea", unit_cost: 0, product_id: null }]);
+
+  // Fill the form from the request once it loads (not on every refetch, so
+  // nothing the warehouse has typed gets overwritten).
+  const [filledFrom, setFilledFrom] = useState<string | null>(null);
+  useEffect(() => {
+    if (!fromRequest || fromRequest.status !== "pending" || filledFrom === fromRequest.id) return;
+    setFilledFrom(fromRequest.id);
+    setProjectId(fromRequest.project_id);
+    setLines(fromRequest.lines.map((l, i) => ({
+      line_no: i + 1, budget_code: "", description: lineLabel(l), qty: l.qty, unit: l.unit, unit_cost: 0, product_id: l.product_id,
+    })));
+  }, [fromRequest, filledFrom]);
 
   const total = lines.reduce((sum, l) => sum + Number(l.qty || 0) * Number(l.unit_cost || 0), 0) + Number(additionalFreight || 0);
 
   const create = useMutation({
     mutationFn: async () => {
       const project = projects.data?.find((p) => p.id === projectId);
-      if (!project) throw new Error("Choose a project");
+      if (!project && !fromRequest) throw new Error("Choose a project");
       if (supplierId === "__other__" && !otherSupplier.trim()) throw new Error("Enter the supplier name");
+      if (fromRequest) {
+        // One atomic call: creates the PO and its lines, then completes the
+        // request (linked to the PO) and notifies the requester.
+        const items = lines.filter((l) => l.description.trim()).map((l) => ({
+          budget_code: l.budget_code || null, description: l.description, qty: l.qty,
+          unit: l.unit || "ea", unit_cost: Number(l.unit_cost) || 0, product_id: l.product_id,
+        }));
+        if (items.length === 0) throw new Error("Add at least one line to the PO");
+        const { data: poRow, error } = await supabase.rpc("create_po_from_request", {
+          _request_id: fromRequest.id,
+          _supplier_id: supplierId === "__other__" ? null : supplierId || null,
+          _bill_to: billTo || null,
+          _ship_to: shipTo || null,
+          _delivery_date: deliveryDate || null,
+          _ship_via: shipVia || null,
+          _payment_terms: paymentTerms || null,
+          _description: description || null,
+          _assignee: assigneeId || null,
+          _additional_freight: additionalFreight || 0,
+          _terms_conditions: termsConditions || null,
+          _new_supplier_name: supplierId === "__other__" ? otherSupplier.trim() : null,
+          _items: items,
+        } as never);
+        if (error) throw error;
+        return poRow as { id: string; po_number: string };
+      }
       // create_purchase_order mints the per-project MKJ<project>EX<seq> number,
       // creates the "Other…" supplier if any, and inserts the PO row all in
       // one atomic call — a failure partway through leaves nothing behind
@@ -79,10 +130,13 @@ function NewPO() {
         const { error: iErr } = await supabase.from("purchase_order_items").insert(items);
         if (iErr) throw iErr;
       }
-      return poRow!.id as string;
+      return poRow as { id: string; po_number: string };
     },
-    onSuccess: () => {
-      toast.success("PO created");
+    onSuccess: (po) => {
+      toast.success(fromRequest ? `${po.po_number} created from ${fromRequest.request_number}` : "PO created");
+      qc.invalidateQueries({ queryKey: ["pos"] });
+      qc.invalidateQueries({ queryKey: ["po-requests"] });
+      qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
       navigate({ to: "/purchase-orders" });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -117,7 +171,7 @@ function NewPO() {
     setLines((ls) => ls.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
   }
   function addLine() {
-    setLines((ls) => [...ls, { line_no: ls.length + 1, budget_code: "", description: "", qty: 1, unit: "ea", unit_cost: 0 }]);
+    setLines((ls) => [...ls, { line_no: ls.length + 1, budget_code: "", description: "", qty: 1, unit: "ea", unit_cost: 0, product_id: null }]);
   }
   function removeLine(i: number) {
     setLines((ls) => ls.filter((_, idx) => idx !== i).map((l, idx) => ({ ...l, line_no: idx + 1 })));
@@ -140,17 +194,52 @@ function NewPO() {
     );
   }
 
+  // A request that's gone, or already completed/cancelled, can't become a PO.
+  if (requestId && request.isSuccess && fromRequest?.status !== "pending") {
+    return (
+      <div className="mx-auto max-w-2xl">
+        <PageHeader title="New Purchase Order" backTo="/purchase-orders" />
+        <Card><CardContent className="space-y-3 p-6 text-sm">
+          <p>
+            {fromRequest
+              ? <>{fromRequest.request_number} is already {fromRequest.status}{fromRequest.po_reference ? <> (PO <span className="font-mono">{fromRequest.po_reference}</span>)</> : null}, so a PO can't be created from it.</>
+              : "That PO request doesn't exist or you can't see it."}
+          </p>
+          <Link to="/purchase-orders"><Button>Go to Purchase Orders</Button></Link>
+        </CardContent></Card>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-5xl">
-      <PageHeader title="New Purchase Order" description="Fill in the details, preview the PDF to double-check everything, then create the PO." />
+      <PageHeader
+        title="New Purchase Order"
+        description={
+          fromRequest
+            ? `Creating the PO for ${fromRequest.request_number}. Add the supplier, prices and budget codes, preview the PDF, then create the PO — the request is completed at the same time.`
+            : "Fill in the details, preview the PDF to double-check everything, then create the PO."
+        }
+      />
       <Button variant="outline" className="mb-4" onClick={() => navigate({ to: "/purchase-orders" })}>
         <ArrowLeft className="mr-2 h-4 w-4" /> Back to Purchase Orders
       </Button>
+      {fromRequest ? (
+        <Card className="mb-4 border-primary/40 bg-primary/5"><CardContent className="space-y-1 p-4 text-sm">
+          <div>
+            From request <span className="font-mono font-semibold">{fromRequest.request_number}</span>
+            {" · requested by "}
+            {fromRequest.requested_by === userId ? "you" : fromRequest.requester_name ?? "unknown user"}
+            {" · "}{new Date(fromRequest.created_at).toLocaleDateString()}
+          </div>
+          {fromRequest.notes ? <p className="whitespace-pre-wrap text-muted-foreground">{fromRequest.notes}</p> : null}
+        </CardContent></Card>
+      ) : null}
       <Card><CardContent className="space-y-4 p-4">
         <div className="grid gap-3 md:grid-cols-2">
           <div>
             <Label>Project</Label>
-            <Select value={projectId} onValueChange={setProjectId}>
+            <Select value={projectId} onValueChange={setProjectId} disabled={!!fromRequest}>
               <SelectTrigger><SelectValue placeholder="Choose project" /></SelectTrigger>
               <SelectContent>{projects.data?.map((p) => <SelectItem key={p.id} value={p.id}>{p.mkj_number} — {p.name}</SelectItem>)}</SelectContent>
             </Select>
@@ -220,7 +309,7 @@ function NewPO() {
           <Button variant="outline" onClick={() => preview.mutate()} disabled={preview.isPending}>
             <FileText className="mr-1 h-4 w-4" />{preview.isPending ? "Rendering…" : "Preview PDF"}
           </Button>
-          <Button disabled={!projectId || create.isPending} onClick={() => create.mutate()}>{create.isPending ? "Creating…" : "Create PO"}</Button>
+          <Button disabled={!projectId || create.isPending || (!!requestId && !fromRequest)} onClick={() => create.mutate()}>{create.isPending ? "Creating…" : "Create PO"}</Button>
         </div>
       </CardContent></Card>
     </div>

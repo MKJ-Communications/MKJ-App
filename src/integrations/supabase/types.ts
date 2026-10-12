@@ -912,6 +912,7 @@ export type Database = {
           po_reference: string | null
           project_id: string
           project_number: string
+          purchase_order_id: string | null
           request_number: string
           request_sequence: number
           requested_by: string | null
@@ -930,6 +931,7 @@ export type Database = {
           po_reference?: string | null
           project_id: string
           project_number: string
+          purchase_order_id: string | null
           request_number: string
           request_sequence: number
           requested_by?: string | null
@@ -948,6 +950,7 @@ export type Database = {
           po_reference?: string | null
           project_id?: string
           project_number?: string
+          purchase_order_id?: string | null
           request_number?: string
           request_sequence?: number
           requested_by?: string | null
@@ -967,6 +970,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "v_project_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "po_requests_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
             referencedColumns: ["id"]
           },
         ]
@@ -2162,6 +2172,7 @@ export type Database = {
           po_reference: string | null
           project_id: string
           project_number: string
+          purchase_order_id: string | null
           request_number: string
           request_sequence: number
           requested_by: string | null
@@ -2190,6 +2201,7 @@ export type Database = {
           po_reference: string | null
           project_id: string
           project_number: string
+          purchase_order_id: string | null
           request_number: string
           request_sequence: number
           requested_by: string | null
@@ -2277,6 +2289,51 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_po_from_request: {
+        Args: {
+          _additional_freight: number
+          _assignee: string
+          _bill_to: string
+          _delivery_date: string
+          _description: string
+          _items: Json
+          _new_supplier_name: string
+          _payment_terms: string
+          _request_id: string
+          _ship_to: string
+          _ship_via: string
+          _supplier_id: string
+          _terms_conditions: string
+        }
+        Returns: {
+          additional_freight: number | null
+          assignee: string | null
+          bill_to: string | null
+          created_at: string
+          created_by: string | null
+          delivery_date: string | null
+          description: string | null
+          id: string
+          payment_terms: string | null
+          po_number: string
+          po_sequence: number
+          pre_receipt_status: Database["public"]["Enums"]["po_status"] | null
+          project_id: string
+          project_number: string
+          ship_to: string | null
+          ship_via: string | null
+          status: Database["public"]["Enums"]["po_status"]
+          supplier_id: string | null
+          terms_conditions: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "purchase_orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_po_request: {
         Args: { _lines: Json; _notes: string; _project_id: string }
         Returns: {
@@ -2291,6 +2348,7 @@ export type Database = {
           po_reference: string | null
           project_id: string
           project_number: string
+          purchase_order_id: string | null
           request_number: string
           request_sequence: number
           requested_by: string | null
@@ -2739,6 +2797,7 @@ export type Database = {
           po_reference: string | null
           project_id: string
           project_number: string
+          purchase_order_id: string | null
           request_number: string
           request_sequence: number
           requested_by: string | null

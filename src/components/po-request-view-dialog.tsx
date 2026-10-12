@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -12,9 +12,9 @@ import { useRoles, useSession } from "@/hooks/use-session";
 import { PORequestStatusBadge, TypedItemBadge } from "@/components/po-request-status-badge";
 import { requestPermissions, useMyManagedProjectIds, type PoRequest } from "@/lib/po-requests";
 
-export type RequestAction = "complete" | "cancel" | null;
+export type RequestAction = "cancel" | null;
 
-/** Request details, plus Edit / Cancel / Mark completed for whoever may do them. */
+/** Request details, plus Edit / Cancel / Create PO for whoever may do them. */
 export function PORequestViewDialog({
   request,
   open,
@@ -33,13 +33,11 @@ export function PORequestViewDialog({
   const roles = useRoles().data ?? [];
   const managed = useMyManagedProjectIds().data ?? [];
   const [action, setAction] = useState<RequestAction>(null);
-  const [poRef, setPoRef] = useState("");
   const [reason, setReason] = useState("");
 
   useEffect(() => {
     if (!open) return;
     setAction(initialAction);
-    setPoRef("");
     setReason("");
   }, [open, request?.id, initialAction]);
 
@@ -49,15 +47,6 @@ export function PORequestViewDialog({
     qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
     onOpenChange(false);
   }
-
-  const complete = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.rpc("complete_po_request", { _request_id: request!.id, _po_reference: poRef });
-      if (error) throw error;
-    },
-    onSuccess: () => finish(`${request!.request_number} marked completed`),
-    onError: (e: Error) => toast.error(e.message),
-  });
 
   const cancel = useMutation({
     mutationFn: async () => {
@@ -73,8 +62,7 @@ export function PORequestViewDialog({
 
   const perms = requestPermissions(request, roles, managed);
   // Only show an action form the viewer is actually allowed to use.
-  const activeAction: RequestAction =
-    action === "complete" && perms.canComplete ? "complete" : action === "cancel" && perms.canCancel ? "cancel" : null;
+  const activeAction: RequestAction = action === "cancel" && perms.canCancel ? "cancel" : null;
   const who = (id: string | null, name: string | null) => (id && id === userId ? "You" : name ?? "Unknown user");
   const when = (ts: string | null) => (ts ? new Date(ts).toLocaleString() : "—");
 
@@ -99,8 +87,14 @@ export function PORequestViewDialog({
             <>
               <dt className="text-muted-foreground">Completed by</dt>
               <dd>{who(request.completed_by, request.completer_name)} · {when(request.completed_at)}</dd>
-              <dt className="text-muted-foreground">PO reference</dt>
-              <dd className="font-mono">{request.po_reference ?? "—"}</dd>
+              <dt className="text-muted-foreground">PO</dt>
+              <dd className="font-mono">
+                {request.purchase_order_id ? (
+                  <Link className="text-primary hover:underline" to="/purchase-orders/$id" params={{ id: request.purchase_order_id }}>
+                    {request.po_reference}
+                  </Link>
+                ) : request.po_reference ?? "—"}
+              </dd>
             </>
           ) : null}
           {request.status === "cancelled" ? (
@@ -149,15 +143,7 @@ export function PORequestViewDialog({
           </Table>
         </div>
 
-        {activeAction === "complete" ? (
-          <div className="space-y-2 rounded-md border p-3">
-            <Label htmlFor="po-request-ref">PO reference (optional)</Label>
-            <Input id="po-request-ref" placeholder="e.g. MKJ2403EX015" value={poRef} onChange={(e) => setPoRef(e.target.value)} />
-            <p className="text-xs text-muted-foreground">
-              {who(request.requested_by, request.requester_name) === "You" ? "The project's managers" : who(request.requested_by, request.requester_name)} will be notified. This can't be undone.
-            </p>
-          </div>
-        ) : activeAction === "cancel" ? (
+        {activeAction === "cancel" ? (
           <div className="space-y-2 rounded-md border p-3">
             <Label htmlFor="po-request-reason">Reason for cancelling</Label>
             <Textarea
@@ -171,14 +157,7 @@ export function PORequestViewDialog({
         ) : null}
 
         <DialogFooter className="gap-2">
-          {activeAction === "complete" ? (
-            <>
-              <Button variant="outline" onClick={() => setAction(null)}>Back</Button>
-              <Button onClick={() => complete.mutate()} disabled={complete.isPending}>
-                {complete.isPending ? "Saving…" : "Mark completed"}
-              </Button>
-            </>
-          ) : activeAction === "cancel" ? (
+          {activeAction === "cancel" ? (
             <>
               <Button variant="outline" onClick={() => setAction(null)}>Back</Button>
               <Button variant="destructive" onClick={() => cancel.mutate()} disabled={cancel.isPending || !reason.trim()}>
@@ -189,8 +168,10 @@ export function PORequestViewDialog({
             <>
               {perms.canEdit ? <Button variant="outline" onClick={() => onEdit(request)}>Edit</Button> : null}
               {perms.canCancel ? <Button variant="outline" onClick={() => setAction("cancel")}>Cancel request</Button> : null}
-              {perms.canComplete ? <Button onClick={() => setAction("complete")}>Mark completed</Button> : null}
-              {!perms.canEdit && !perms.canCancel && !perms.canComplete ? (
+              {perms.canCreatePo ? (
+                <Link to="/purchase-orders/new" search={{ request: request.id }}><Button>Create PO</Button></Link>
+              ) : null}
+              {!perms.canEdit && !perms.canCancel && !perms.canCreatePo ? (
                 <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
               ) : null}
             </>

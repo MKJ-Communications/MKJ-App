@@ -255,7 +255,9 @@ function POList() {
                     <div className="flex items-center justify-end gap-1">
                       <Button size="sm" variant="outline" onClick={() => openRequest(r.id)}>View</Button>
                       {perms.canEdit ? <Button size="sm" variant="outline" onClick={() => startEdit(r)}>Edit</Button> : null}
-                      {perms.canComplete ? <Button size="sm" onClick={() => openRequest(r.id, "complete")}>Mark completed</Button> : null}
+                      {perms.canCreatePo ? (
+                        <Link to="/purchase-orders/new" search={{ request: r.id }}><Button size="sm">Create PO</Button></Link>
+                      ) : null}
                       {perms.canCancel ? <Button size="sm" variant="ghost" onClick={() => openRequest(r.id, "cancel")}>Cancel</Button> : null}
                     </div>
                   </TableCell>
