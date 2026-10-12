@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { POStatusBadge, PO_STATUS_OPTIONS } from "@/components/po-status-badge";
 import { POEditDialog } from "@/components/po-edit-dialog";
 import { PODeleteButton } from "@/components/po-delete-button";
+import { POSovDialog } from "@/components/po-sov-dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -107,6 +108,7 @@ function POView() {
             <Button size="sm" variant="outline" onClick={() => pdfMut.mutate()} disabled={pdfMut.isPending}>
               <FileText className="mr-1 h-4 w-4" />{pdfMut.isPending ? "Opening…" : "View PO"}
             </Button>
+            <POSovDialog poId={id} variant="button" />
             <POEditDialog poId={id} status={po.data.status} variant="button" />
             <PODeleteButton
               poId={id}

@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/page-header";
 import { POStatusBadge } from "@/components/po-status-badge";
 import { POEditDialog } from "@/components/po-edit-dialog";
 import { PODeleteButton } from "@/components/po-delete-button";
+import { POSovDialog } from "@/components/po-sov-dialog";
 import { PORequestStatusBadge, RowTypeChip } from "@/components/po-request-status-badge";
 import { PORequestFormDialog } from "@/components/po-request-form-dialog";
 import { PORequestViewDialog, type RequestAction } from "@/components/po-request-view-dialog";
@@ -227,6 +228,7 @@ function POList() {
                           <FileText className="mr-1 h-4 w-4" />
                           {pdfMut.isPending && pdfMut.variables === po.id ? "Opening…" : "View PO"}
                         </Button>
+                        <POSovDialog poId={po.id} />
                         <POEditDialog poId={po.id} status={po.status} />
                         <PODeleteButton poId={po.id} poNumber={po.po_number} status={po.status} />
                       </div>
